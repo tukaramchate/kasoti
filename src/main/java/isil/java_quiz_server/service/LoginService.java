@@ -1,6 +1,6 @@
 package isil.java_quiz_server.service;
 
-import isil.java_quiz_server.modal.User;
+import isil.java_quiz_server.model.User;
 import isil.java_quiz_server.repository.UserRepository;
 import isil.java_quiz_server.requests.LoginRequest;
 import isil.java_quiz_server.response.LoginResponse;

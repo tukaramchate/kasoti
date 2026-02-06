@@ -1,9 +1,36 @@
-/* Home Page - Purple Theme */
+/* Home Page - Purple Theme with Dark Mode Support */
+
+/* CSS Variables for Theming */
+:root {
+  --bg-primary: #fff;
+  --bg-secondary: #f0efff;
+  --bg-card: #fff;
+  --text-primary: #333;
+  --text-secondary: #666;
+  --text-muted: #999;
+  --border-color: #f0efff;
+  --accent: #4d47c3;
+  --accent-hover: #3a35a5;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --bg-card: #0f3460;
+  --text-primary: #eee;
+  --text-secondary: #ccc;
+  --text-muted: #888;
+  --border-color: #16213e;
+  --accent: #6c63ff;
+  --accent-hover: #5a52e0;
+}
+
 .home-container {
   min-height: 100vh;
-  background-color: #fff;
+  background-color: var(--bg-primary);
   padding: 40px 60px;
   font-family: Poppins, sans-serif;
+  transition: background-color 0.3s ease;
 }
 
 .home-header {
@@ -46,6 +73,25 @@
   gap: 20px;
 }
 
+.theme-toggle {
+  background: var(--bg-secondary);
+  border: none;
+  padding: 10px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.theme-toggle:hover {
+  background: var(--accent);
+  color: white;
+}
+
 .user-info {
   display: flex;
   align-items: center;
@@ -53,6 +99,13 @@
   background-color: #f0efff;
   padding: 10px 20px;
   border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.user-info:hover {
+  background-color: #e0dfff;
+  transform: translateY(-2px);
 }
 
 .user-avatar {
@@ -165,6 +218,89 @@
   font-weight: 600;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  background-color: #f0efff;
+  padding: 10px 18px;
+  border-radius: 25px;
+  gap: 10px;
+}
+
+.search-icon {
+  color: #666;
+  font-size: 18px;
+}
+
+.search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: Poppins, sans-serif;
+  font-size: 14px;
+  color: #333;
+  width: 180px;
+}
+
+.search-input::placeholder {
+  color: #999;
+}
+
+/* Category Filter */
+.category-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+.category-btn {
+  background-color: #f0efff;
+  border: 2px solid transparent;
+  color: #666;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-family: Poppins, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.category-btn:hover {
+  background-color: #e0dfff;
+  color: #4d47c3;
+}
+
+.category-btn.active {
+  background-color: #4d47c3;
+  color: white;
+  border-color: #4d47c3;
+}
+
+/* Quiz Card Badges */
+.quiz-card-badges {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.quiz-card-category-badge {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
 .create-quiz-btn {
   display: flex;
   align-items: center;
@@ -264,6 +400,50 @@
 .quiz-card-author-name {
   color: #666;
   font-size: 14px;
+}
+
+.quiz-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 15px;
+  border-top: 1px solid #f0efff;
+}
+
+.quiz-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.quiz-action-btn {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 16px;
+}
+
+.quiz-action-btn.edit {
+  color: #4d47c3;
+}
+
+.quiz-action-btn.edit:hover {
+  background-color: #f0efff;
+}
+
+.quiz-action-btn.delete {
+  color: #e53e3e;
+}
+
+.quiz-action-btn.delete:hover {
+  background-color: #fed7d7;
+}
+
+.leaderboard-link-icon {
+  cursor: pointer;
+  z-index: 10;
 }
 
 /* Empty State */

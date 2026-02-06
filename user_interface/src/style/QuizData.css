@@ -335,34 +335,218 @@
   }
 }
 
+/* Quiz Header Row */
+.quiz-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.timer-badge {
+  background-color: #f0efff;
+  color: #4d47c3;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  animation: slideDown 0.5s ease;
+}
+
+.timer-badge.urgent {
+  background-color: #ffeaea;
+  color: #e74c3c;
+  animation: pulse-urgent 1s infinite;
+}
+
+@keyframes pulse-urgent {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Quiz Progress Bar (Compact) */
+.quiz-progress-bar-container {
+  margin-bottom: 30px;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.quiz-progress-text {
+  text-align: right;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.progress-track {
+  height: 8px;
+  background-color: #eee;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #4d47c3;
+  transition: width 0.3s ease;
+}
+
+/* Footer Navigation */
+.quiz-footer {
+  display: flex;
+  justify-content: space-between;
+  max-width: 700px;
+  margin: 0 auto;
+  margin-top: 20px;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 25px;
+  border: none;
+  border-radius: 10px;
+  font-family: Poppins, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.prev-btn {
+  background-color: #f0efff;
+  color: #4d47c3;
+}
+
+.prev-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.prev-btn:hover:not(:disabled) {
+  background-color: #e0dfff;
+}
+
+.next-btn {
+  background-color: #4d47c3;
+  color: white;
+  box-shadow: 0 4px 15px rgba(77, 71, 195, 0.3);
+}
+
+.next-btn:hover {
+  transform: translateX(5px);
+  background-color: #3d37a8;
+}
+
+.submit-btn {
+  background-color: #27ae60;
+  color: white;
+  box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+  background-color: #219150;
+}
+
+.option-item.selected {
+  border-color: #4d47c3;
+  background-color: #f0efff;
+  font-weight: 500;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .quizdata-container {
     padding: 20px;
   }
 
-  .quiz-info-card {
-    padding: 25px;
+  .quiz-header-row {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 15px;
   }
 
-  .question-card {
+  .timer-badge {
+    justify-content: center;
+  }
+
+  .quiz-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
     padding: 20px;
+    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1);
+    z-index: 100;
   }
 
-  .quiz-meta {
-    flex-direction: column;
-    gap: 10px;
+  .quizdata-container {
+    padding-bottom: 100px;
+    /* Space for fixed footer */
   }
+}
 
-  .score-card {
-    padding: 30px;
-  }
+/* Already Attempted Message */
+.already-attempted-message {
+  max-width: 500px;
+  margin: 60px auto;
+  text-align: center;
+  background-color: #f9f9ff;
+  border-radius: 25px;
+  padding: 50px 40px;
+}
 
-  .score-value {
-    font-size: 48px;
-  }
+.already-attempted-icon {
+  font-size: 60px;
+  margin-bottom: 20px;
+}
 
-  .score-actions {
-    flex-direction: column;
-  }
+.already-attempted-message h2 {
+  color: #333;
+  font-size: 24px;
+  margin-bottom: 15px;
+}
+
+.already-attempted-message p {
+  color: #666;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.already-attempted-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 30px;
+}
+
+.already-attempted-actions .profile-btn {
+  background-color: #4d47c3;
+  color: white;
+  padding: 12px 25px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.already-attempted-actions .profile-btn:hover {
+  background-color: #3d37a8;
 }

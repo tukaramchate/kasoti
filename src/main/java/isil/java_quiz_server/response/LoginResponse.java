@@ -1,6 +1,6 @@
 package isil.java_quiz_server.response;
 
-import isil.java_quiz_server.modal.User;
+import isil.java_quiz_server.model.User;
 
 public class LoginResponse {
     private User user;

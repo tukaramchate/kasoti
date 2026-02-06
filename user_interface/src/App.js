@@ -9,10 +9,14 @@ import Login from "./Login";
 import Register from "./Register";
 import Home from "./Home";
 import QuizData from "./QuizData";
+import AddQuiz from "./AddQuiz";
+import EditQuiz from "./EditQuiz";
+import QuizStudents from "./QuizStudents";
+import Profile from "./Profile";
+import Leaderboard from "./Leaderboard";
+import { UserContext } from "./userContext";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import AddQuiz from "./AddQuiz";
-import { UserContext } from "./userContext";
 
 const App = () => {
   const { user } = useContext(UserContext);
@@ -31,10 +35,27 @@ const App = () => {
           path="/addQuiz"
           element={user ? <AddQuiz /> : <Navigate to="/" />}
         />
+        <Route
+          path="/editQuiz/:id"
+          element={user ? <EditQuiz /> : <Navigate to="/" />}
+        />
+        <Route
+          path="/quiz/:id/students"
+          element={user ? <QuizStudents /> : <Navigate to="/" />}
+        />
+        <Route
+          path="/profile"
+          element={user ? <Profile /> : <Navigate to="/" />}
+        />
+        <Route
+          path="/leaderboard/:id"
+          element={user ? <Leaderboard /> : <Navigate to="/" />}
+        />
       </Routes>
       <ToastContainer />
     </Router>
   );
 };
+
 
 export default App;

@@ -78,6 +78,12 @@ export const quizAPI = {
 
     getLeaderboard: (id) =>
         api.get(`/api/quizzes/${id}/leaderboard`),
+
+    hasAttempted: (id) =>
+        api.get(`/api/quizzes/${id}/attempted`),
+
+    getQuizStudents: (id) =>
+        api.get(`/api/quizzes/${id}/students`),
 };
 
 // User API

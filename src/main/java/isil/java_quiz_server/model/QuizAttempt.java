@@ -1,4 +1,4 @@
-package isil.java_quiz_server.modal;
+package isil.java_quiz_server.model;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;

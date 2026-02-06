@@ -1,4 +1,4 @@
-package isil.java_quiz_server.modal;
+package isil.java_quiz_server.model;
 
 import jakarta.persistence.*;
 import java.util.List;
@@ -14,6 +14,9 @@ public class Quiz {
     private String title;
     @Column(nullable = false)
     private String username;
+
+    @Column
+    private String category = "General";
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "quiz_id")
@@ -49,5 +52,13 @@ public class Quiz {
 
     public void setQuestions(List<Question> questions) {
         this.questions = questions;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 }

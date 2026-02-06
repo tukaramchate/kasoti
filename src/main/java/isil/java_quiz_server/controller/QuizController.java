@@ -2,8 +2,8 @@ package isil.java_quiz_server.controller;
 
 import isil.java_quiz_server.dto.QuizResultResponse;
 import isil.java_quiz_server.dto.SubmitQuizRequest;
-import isil.java_quiz_server.modal.Quiz;
-import isil.java_quiz_server.modal.QuizAttempt;
+import isil.java_quiz_server.model.Quiz;
+import isil.java_quiz_server.model.QuizAttempt;
 import isil.java_quiz_server.security.UserPrincipal;
 import isil.java_quiz_server.service.QuizService;
 import jakarta.validation.Valid;
@@ -28,6 +28,11 @@ public class QuizController {
     @GetMapping
     public List<Quiz> getAllQuizzes() {
         return quizService.getAllQuizzes();
+    }
+
+    @GetMapping("/category/{category}")
+    public List<Quiz> getQuizzesByCategory(@PathVariable String category) {
+        return quizService.getQuizzesByCategory(category);
     }
 
     @GetMapping("/{id}")
@@ -74,5 +79,18 @@ public class QuizController {
     @GetMapping("/{id}/leaderboard")
     public List<QuizAttempt> getQuizLeaderboard(@PathVariable Long id) {
         return quizService.getQuizLeaderboard(id);
+    }
+
+    @GetMapping("/{id}/attempted")
+    public ResponseEntity<Boolean> hasUserAttempted(@PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        boolean attempted = quizService.hasUserAttempted(principal.getId(), id);
+        return ResponseEntity.ok(attempted);
+    }
+
+    @GetMapping("/{id}/students")
+    public List<QuizAttempt> getQuizStudents(@PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return quizService.getQuizStudents(id, principal.getUsername());
     }
 }

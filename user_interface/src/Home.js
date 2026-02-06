@@ -5,12 +5,37 @@ import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./style/Home.css";
+import { FiSearch, FiMoon, FiSun } from "react-icons/fi";
+
+// Components
+import QuizCard from "./components/QuizCard";
+import StatsCard from "./components/StatsCard";
+import LoadingSpinner from "./components/LoadingSpinner";
+import QuizSkeleton from "./components/QuizSkeleton";
+
+const CATEGORIES = ['All', 'General', 'Science', 'Mathematics', 'History', 'Technology', 'Languages', 'Arts'];
 
 const Home = () => {
   const { user, setUser } = useContext(UserContext);
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
   const navigate = useNavigate();
+
+  // Apply dark mode to document
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
+
+  // Combined filtering: category + search
+  const filteredQuizzes = quizzes.filter(quiz => {
+    const matchesCategory = selectedCategory === 'All' || quiz.category === selectedCategory;
+    const matchesSearch = quiz.title.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   useEffect(() => {
     fetchQuizzes();
@@ -39,6 +64,17 @@ const Home = () => {
     navigate(`/quiz/${quizId}`);
   };
 
+  const handleDeleteQuiz = async (quizId) => {
+    try {
+      await quizAPI.deleteQuiz(quizId);
+      setQuizzes(quizzes.filter(q => q.id !== quizId));
+      toast.success('Quiz deleted successfully');
+    } catch (error) {
+      console.error('Error deleting quiz:', error);
+      toast.error('Failed to delete quiz');
+    }
+  };
+
   const currentUser = user?.user;
   const isTeacher = currentUser?.is_teacher;
 
@@ -52,8 +88,11 @@ const Home = () => {
         </div>
 
         <div className="user-section">
+          <button className="theme-toggle" onClick={() => setDarkMode(!darkMode)} title="Toggle theme">
+            {darkMode ? <FiSun /> : <FiMoon />}
+          </button>
           {currentUser && (
-            <div className="user-info">
+            <div className="user-info" onClick={() => navigate('/profile')}>
               <div className="user-avatar">
                 {currentUser.username?.charAt(0).toUpperCase()}
               </div>
@@ -79,36 +118,61 @@ const Home = () => {
 
       {/* Stats Section */}
       <section className="stats-section">
-        <div className="stat-card">
-          <div className="stat-value">{quizzes.length}</div>
-          <div className="stat-label">Total Quizzes</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">
-            {quizzes.reduce((acc, quiz) => acc + (quiz.questions?.length || 0), 0)}
-          </div>
-          <div className="stat-label">Total Questions</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{isTeacher ? "Create" : "Learn"}</div>
-          <div className="stat-label">{isTeacher ? "New Quizzes" : "& Explore"}</div>
-        </div>
+        <StatsCard
+          value={quizzes.length}
+          label="Total Quizzes"
+        />
+        <StatsCard
+          value={quizzes.reduce((acc, quiz) => acc + (quiz.questions?.length || 0), 0)}
+          label="Total Questions"
+        />
+        <StatsCard
+          value={isTeacher ? "Create" : "Learn"}
+          label={isTeacher ? "New Quizzes" : "& Explore"}
+        />
       </section>
 
       {/* Quiz Section */}
       <section className="quiz-section">
         <div className="section-header">
           <h2 className="section-title">Available Quizzes</h2>
-          {isTeacher && (
-            <Link to="/addQuiz" className="create-quiz-btn">
-              + Create Quiz
-            </Link>
-          )}
+          <div className="header-actions">
+            <div className="search-box">
+              <FiSearch className="search-icon" />
+              <input
+                type="text"
+                className="search-input"
+                placeholder="Search quizzes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            {isTeacher && (
+              <Link to="/addQuiz" className="create-quiz-btn">
+                + Create Quiz
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* Category Filter */}
+        <div className="category-filter">
+          {CATEGORIES.map((category) => (
+            <button
+              key={category}
+              className={`category-btn ${selectedCategory === category ? 'active' : ''}`}
+              onClick={() => setSelectedCategory(category)}
+            >
+              {category}
+            </button>
+          ))}
         </div>
 
         {loading ? (
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
+          <div className="quiz-grid">
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <QuizSkeleton key={n} />
+            ))}
           </div>
         ) : quizzes.length === 0 ? (
           <div className="empty-state">
@@ -125,33 +189,21 @@ const Home = () => {
               </Link>
             )}
           </div>
+        ) : filteredQuizzes.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">🔍</div>
+            <h3 className="empty-title">No quizzes in this category</h3>
+            <p className="empty-text">Try selecting a different category.</p>
+          </div>
         ) : (
           <div className="quiz-grid">
-            {quizzes.map((quiz) => (
-              <div
+            {filteredQuizzes.map((quiz) => (
+              <QuizCard
                 key={quiz.id}
-                className="quiz-card"
+                quiz={quiz}
                 onClick={() => handleQuizClick(quiz.id)}
-              >
-                <div className="quiz-card-header">
-                  <h3 className="quiz-card-title">{quiz.title}</h3>
-                  <span className="quiz-card-badge">
-                    {quiz.questions?.length || 0} Q
-                  </span>
-                </div>
-                <div className="quiz-card-meta">
-                  <span>⏱ {(quiz.questions?.length || 0) * 30}s</span>
-                  <span>📝 Interactive</span>
-                </div>
-                <div className="quiz-card-author">
-                  <div className="quiz-card-author-avatar">
-                    {quiz.username?.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="quiz-card-author-name">
-                    By {quiz.username}
-                  </span>
-                </div>
-              </div>
+                onDelete={handleDeleteQuiz}
+              />
             ))}
           </div>
         )}

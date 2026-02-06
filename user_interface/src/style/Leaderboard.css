@@ -1,0 +1,171 @@
+/* Leaderboard Styles */
+.leaderboard-container {
+    min-height: 100vh;
+    background-color: #f8f9fa;
+    padding: 40px 20px;
+    font-family: 'Poppins', sans-serif;
+    display: flex;
+    justify-content: center;
+}
+
+.leaderboard-content {
+    width: 100%;
+    max-width: 800px;
+}
+
+.leaderboard-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.leaderboard-header {
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    padding: 40px;
+    color: white;
+    text-align: center;
+    position: relative;
+}
+
+.leaderboard-title {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 800;
+    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+.leaderboard-subtitle {
+    margin-top: 10px;
+    font-size: 16px;
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.leaderboard-table-container {
+    padding: 20px;
+    overflow-x: auto;
+}
+
+.leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.leaderboard-table th {
+    text-align: left;
+    padding: 15px 20px;
+    color: #888;
+    font-size: 14px;
+    font-weight: 600;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.leaderboard-table td {
+    padding: 20px;
+    border-bottom: 1px solid #f9f9f9;
+    color: #333;
+    font-size: 16px;
+    vertical-align: middle;
+}
+
+.rank-cell {
+    width: 60px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 18px;
+    color: #888;
+}
+
+.rank-badge {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    color: white;
+    font-size: 16px;
+}
+
+.rank-1 {
+    background: #FFD700;
+    box-shadow: 0 4px 10px rgba(255, 215, 0, 0.4);
+}
+
+.rank-2 {
+    background: #C0C0C0;
+    box-shadow: 0 4px 10px rgba(192, 192, 192, 0.4);
+}
+
+.rank-3 {
+    background: #CD7F32;
+    box-shadow: 0 4px 10px rgba(205, 127, 50, 0.4);
+}
+
+.user-cell {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-weight: 600;
+}
+
+.user-avatar-small {
+    width: 40px;
+    height: 40px;
+    background-color: #e0e0e0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    font-size: 16px;
+}
+
+.score-cell {
+    font-weight: 700;
+    color: #4d47c3;
+}
+
+.date-cell {
+    color: #999;
+    font-size: 14px;
+}
+
+.current-user-row {
+    background-color: #f0efff;
+    border-left: 4px solid #4d47c3;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 50px;
+    color: #666;
+}
+
+.empty-icon {
+    font-size: 50px;
+    margin-bottom: 20px;
+    color: #ddd;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .date-cell {
+        display: none;
+    }
+
+    .leaderboard-header {
+        padding: 30px 20px;
+    }
+
+    .leaderboard-title {
+        font-size: 24px;
+    }
+}

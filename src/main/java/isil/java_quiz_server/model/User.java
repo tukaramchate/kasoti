@@ -1,4 +1,4 @@
-package isil.java_quiz_server.modal;
+package isil.java_quiz_server.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;

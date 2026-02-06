@@ -1,6 +1,6 @@
 package isil.java_quiz_server.repository;
 
-import isil.java_quiz_server.modal.User;
+import isil.java_quiz_server.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

@@ -1,90 +1,57 @@
-import React, { useState, useContext } from "react";
+import React, { useContext, useState } from "react";
 import { quizAPI } from "./api";
 import { UserContext } from "./userContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
-import { FiChevronLeft, FiPlus, FiTrash2 } from "react-icons/fi";
+import { FiPlus, FiTrash2 } from "react-icons/fi";
+import { useForm, useFieldArray } from "react-hook-form";
 import "./style/AddQuiz.css";
+// Components
+import PageHeader from "./components/PageHeader";
+
+const CATEGORIES = ['General', 'Science', 'Mathematics', 'History', 'Technology', 'Languages', 'Arts'];
 
 const AddQuiz = () => {
   const navigate = useNavigate();
   const { user } = useContext(UserContext);
-  const username = user?.user?.username || "";
-
-  const [quiz, setQuiz] = useState({
-    title: "",
-    username: username,
-    questions: [
-      {
-        text: "",
-        options: ["", ""],
-        correctOption: "",
-      },
-    ],
-  });
   const [loading, setLoading] = useState(false);
 
-  const addQuestion = () => {
-    setQuiz({
-      ...quiz,
+  const {
+    register,
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      title: "",
+      category: "General",
       questions: [
-        ...quiz.questions,
-        { text: "", options: ["", ""], correctOption: "" },
+        {
+          text: "",
+          options: ["", ""], // Start with 2 empty options
+          correctOption: "",
+        },
       ],
-    });
-  };
+    },
+  });
 
-  const removeQuestion = (qIndex) => {
-    if (quiz.questions.length > 1) {
-      const newQuestions = quiz.questions.filter((_, index) => index !== qIndex);
-      setQuiz({ ...quiz, questions: newQuestions });
-    }
-  };
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "questions",
+  });
 
-  const addOption = (qIndex) => {
-    const newQuestions = [...quiz.questions];
-    newQuestions[qIndex].options.push("");
-    setQuiz({ ...quiz, questions: newQuestions });
-  };
-
-  const updateQuestion = (qIndex, field, value) => {
-    const newQuestions = [...quiz.questions];
-    newQuestions[qIndex][field] = value;
-    setQuiz({ ...quiz, questions: newQuestions });
-  };
-
-  const updateOption = (qIndex, oIndex, value) => {
-    const newQuestions = [...quiz.questions];
-    newQuestions[qIndex].options[oIndex] = value;
-    setQuiz({ ...quiz, questions: newQuestions });
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
-    if (!quiz.title.trim()) {
-      toast.error("Please enter a quiz title");
-      return;
-    }
-
-    const hasEmptyQuestion = quiz.questions.some((q) => !q.text.trim());
-    if (hasEmptyQuestion) {
-      toast.error("Please fill in all question texts");
-      return;
-    }
-
-    const hasEmptyCorrectAnswer = quiz.questions.some(
-      (q) => !q.correctOption.trim()
-    );
-    if (hasEmptyCorrectAnswer) {
-      toast.error("Please set correct answer for all questions");
-      return;
-    }
-
+  const onSubmit = async (data) => {
     setLoading(true);
     try {
-      await quizAPI.createQuiz(quiz);
+      // transform data to match API expectation if needed
+      // Currently API expects { title, username, questions: [...] }
+      const quizData = {
+        ...data,
+        username: user?.user?.username,
+      };
+
+      await quizAPI.createQuiz(quizData);
       toast.success("Quiz created successfully! 🎉");
       setTimeout(() => navigate("/home"), 1500);
     } catch (error) {
@@ -102,16 +69,10 @@ const AddQuiz = () => {
 
   return (
     <div className="addquiz-container">
-      {/* Header */}
-      <header className="addquiz-header">
-        <button onClick={() => navigate("/home")} className="back-button">
-          <FiChevronLeft />
-        </button>
-        <h1 className="page-title">Create New Quiz</h1>
-      </header>
+      <PageHeader title="Create New Quiz" />
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="form-container">
+      <form onSubmit={handleSubmit(onSubmit)} className="form-container">
         {/* Quiz Details Section */}
         <div className="form-section">
           <h2 className="section-title">📝 Quiz Details</h2>
@@ -119,11 +80,24 @@ const AddQuiz = () => {
             <label className="form-label">Quiz Title</label>
             <input
               type="text"
-              className="form-input"
+              className={`form-input ${errors.title ? "error" : ""}`}
               placeholder="Enter an engaging quiz title..."
-              value={quiz.title}
-              onChange={(e) => setQuiz({ ...quiz, title: e.target.value })}
+              {...register("title", { required: "Quiz title is required" })}
             />
+            {errors.title && (
+              <span className="error-text">{errors.title.message}</span>
+            )}
+          </div>
+          <div className="form-group">
+            <label className="form-label">Category</label>
+            <select
+              className="form-input"
+              {...register("category", { required: "Category is required" })}
+            >
+              {CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -131,17 +105,18 @@ const AddQuiz = () => {
         <div className="form-section">
           <h2 className="section-title">❓ Questions</h2>
 
-          {quiz.questions.map((question, qIndex) => (
-            <div key={qIndex} className="question-card">
+          {fields.map((field, qIndex) => (
+            <div key={field.id} className="question-card">
               <div className="question-header">
                 <span className="question-number">Question {qIndex + 1}</span>
-                {quiz.questions.length > 1 && (
+                {fields.length > 1 && (
                   <button
                     type="button"
                     className="remove-btn"
-                    onClick={() => removeQuestion(qIndex)}
+                    onClick={() => remove(qIndex)}
+                    aria-label="Remove question"
                   >
-                    <FiTrash2 />
+                    <FiTrash2 aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -150,57 +125,62 @@ const AddQuiz = () => {
                 <label className="form-label">Question Text</label>
                 <input
                   type="text"
-                  className="form-input"
+                  className={`form-input ${errors.questions?.[qIndex]?.text ? "error" : ""
+                    }`}
                   placeholder="Enter your question..."
-                  value={question.text}
-                  onChange={(e) => updateQuestion(qIndex, "text", e.target.value)}
+                  {...register(`questions.${qIndex}.text`, {
+                    required: "Question text is required",
+                  })}
                 />
+                {errors.questions?.[qIndex]?.text && (
+                  <span className="error-text">
+                    {errors.questions[qIndex].text.message}
+                  </span>
+                )}
               </div>
 
-              <div className="options-container">
-                <label className="form-label">Answer Options</label>
-                {question.options.map((option, oIndex) => (
-                  <div key={oIndex} className="option-row">
-                    <span className="option-label">
-                      {String.fromCharCode(65 + oIndex)}
-                    </span>
-                    <input
-                      type="text"
-                      className="option-input"
-                      placeholder={`Option ${oIndex + 1}`}
-                      value={option}
-                      onChange={(e) => updateOption(qIndex, oIndex, e.target.value)}
-                    />
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  className="add-option-btn"
-                  onClick={() => addOption(qIndex)}
-                >
-                  <FiPlus /> Add Option
-                </button>
-              </div>
+              {/* Options - Handled slightly differently as exact array logic can be tricky with nested arrays in basic layout */}
+              {/* For simplicity in this demo, we'll assume fixed 4 options or dynamic simple array */}
+              {/* To strictly match previous functionality of dynamic options, we would need nested useFieldArray */}
+              {/* For now, let's keep it simple with manual option management re-integrated or simplified */}
+
+              <NestedOptionList
+                nestIndex={qIndex}
+                control={control}
+                register={register}
+                errors={errors}
+              />
 
               <div className="correct-answer-section">
                 <div className="form-group">
                   <label className="form-label">Correct Answer</label>
                   <input
                     type="text"
-                    className="form-input"
+                    className={`form-input ${errors.questions?.[qIndex]?.correctOption ? "error" : ""
+                      }`}
                     placeholder="Enter the correct answer..."
-                    value={question.correctOption}
-                    onChange={(e) =>
-                      updateQuestion(qIndex, "correctOption", e.target.value)
-                    }
+                    {...register(`questions.${qIndex}.correctOption`, {
+                      required: "Correct answer is required",
+                    })}
                   />
+                  {errors.questions?.[qIndex]?.correctOption && (
+                    <span className="error-text">
+                      {errors.questions[qIndex].correctOption.message}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
           ))}
 
-          <button type="button" className="add-question-btn" onClick={addQuestion}>
-            <FiPlus /> Add Another Question
+          <button
+            type="button"
+            className="add-question-btn"
+            onClick={() =>
+              append({ text: "", options: ["", ""], correctOption: "" })
+            }
+          >
+            <FiPlus aria-hidden="true" /> Add Another Question
           </button>
         </div>
 
@@ -220,6 +200,38 @@ const AddQuiz = () => {
       </form>
 
       <ToastContainer />
+    </div>
+  );
+};
+
+// Helper component for nested options array
+const NestedOptionList = ({ nestIndex, control, register, errors }) => {
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: `questions.${nestIndex}.options`,
+  });
+
+  return (
+    <div className="options-container">
+      <label className="form-label">Answer Options</label>
+      {fields.map((field, k) => (
+        <div key={field.id} className="option-row">
+          <span className="option-label">{String.fromCharCode(65 + k)}</span>
+          <input
+            type="text"
+            className="option-input"
+            placeholder={`Option ${k + 1}`}
+            {...register(`questions.${nestIndex}.options.${k}`)}
+          />
+        </div>
+      ))}
+      <button
+        type="button"
+        className="add-option-btn"
+        onClick={() => append("")}
+      >
+        <FiPlus /> Add Option
+      </button>
     </div>
   );
 };

@@ -4,10 +4,10 @@ import isil.java_quiz_server.dto.QuizResultResponse;
 import isil.java_quiz_server.dto.SubmitQuizRequest;
 import isil.java_quiz_server.exception.ResourceNotFoundException;
 import isil.java_quiz_server.exception.UnauthorizedException;
-import isil.java_quiz_server.modal.Question;
-import isil.java_quiz_server.modal.Quiz;
-import isil.java_quiz_server.modal.QuizAttempt;
-import isil.java_quiz_server.modal.User;
+import isil.java_quiz_server.model.Question;
+import isil.java_quiz_server.model.Quiz;
+import isil.java_quiz_server.model.QuizAttempt;
+import isil.java_quiz_server.model.User;
 import isil.java_quiz_server.repository.QuizAttemptRepository;
 import isil.java_quiz_server.repository.QuizRepository;
 import isil.java_quiz_server.repository.UserRepository;
@@ -44,6 +44,10 @@ public class QuizService {
 
     public List<Quiz> getQuizzesByUsername(String username) {
         return quizRepository.findByUsername(username);
+    }
+
+    public List<Quiz> getQuizzesByCategory(String category) {
+        return quizRepository.findByCategory(category);
     }
 
     @Transactional
@@ -91,6 +95,11 @@ public class QuizService {
         User user = userRepository.findById(principal.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", principal.getId()));
 
+        // Check if user has already attempted this quiz
+        if (quizAttemptRepository.existsByUserIdAndQuizId(principal.getId(), quizId)) {
+            throw new IllegalStateException("You have already attempted this quiz. Only one attempt is allowed.");
+        }
+
         // Calculate score
         Map<Long, String> answers = request.getAnswers();
         int correctCount = 0;
@@ -115,7 +124,7 @@ public class QuizService {
         attempt.setTimeTakenSeconds(request.getTimeTakenSeconds());
         quizAttemptRepository.save(attempt);
 
-        // Return result
+        // Return result (no correct answers shown)
         return new QuizResultResponse(
                 quiz.getId(),
                 quiz.getTitle(),
@@ -124,11 +133,24 @@ public class QuizService {
                 request.getTimeTakenSeconds());
     }
 
+    public boolean hasUserAttempted(Long userId, Long quizId) {
+        return quizAttemptRepository.existsByUserIdAndQuizId(userId, quizId);
+    }
+
     public List<QuizAttempt> getUserAttempts(Long userId) {
         return quizAttemptRepository.findByUserIdOrderByAttemptedAtDesc(userId);
     }
 
     public List<QuizAttempt> getQuizLeaderboard(Long quizId) {
-        return quizAttemptRepository.findByQuizIdOrderByScoreDesc(quizId);
+        return quizAttemptRepository.findByQuizIdOrderByScoreDescTimeTakenSecondsAsc(quizId);
+    }
+
+    public List<QuizAttempt> getQuizStudents(Long quizId, String username) {
+        Quiz quiz = getQuizById(quizId);
+        // Only quiz owner can see students
+        if (!quiz.getUsername().equals(username)) {
+            throw new UnauthorizedException("You can only view students for your own quizzes");
+        }
+        return quizAttemptRepository.findByQuizIdOrderByScoreAsc(quizId);
     }
 }

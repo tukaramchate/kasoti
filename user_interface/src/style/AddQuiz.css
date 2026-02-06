@@ -303,3 +303,15 @@
     width: 100%;
   }
 }
+
+.error-text {
+  color: #e74c3c;
+  font-size: 12px;
+  margin-top: 5px;
+  display: block;
+}
+
+.form-input.error {
+  border-color: #e74c3c;
+  background-color: #fdf2f2;
+}

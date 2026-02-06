@@ -6,7 +6,7 @@ import isil.java_quiz_server.dto.RegisterRequest;
 import isil.java_quiz_server.dto.UserDTO;
 import isil.java_quiz_server.exception.BadRequestException;
 import isil.java_quiz_server.exception.UnauthorizedException;
-import isil.java_quiz_server.modal.User;
+import isil.java_quiz_server.model.User;
 import isil.java_quiz_server.repository.UserRepository;
 import isil.java_quiz_server.security.JwtTokenProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;

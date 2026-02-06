@@ -1,7 +1,6 @@
 package isil.java_quiz_server.controller;
 
-
-import isil.java_quiz_server.modal.User;
+import isil.java_quiz_server.model.User;
 import isil.java_quiz_server.repository.UserRepository;
 import isil.java_quiz_server.requests.LoginRequest;
 import isil.java_quiz_server.response.LoginResponse;
@@ -22,7 +21,7 @@ public class UserController {
     private LoginService loginService;
 
     @PostMapping("/register")
-    User newUser( @RequestBody User newUser) {
+    User newUser(@RequestBody User newUser) {
         return userRepository.save(newUser);
     }
 
@@ -41,6 +40,5 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(loginResponse);
         }
     }
-
 
 }
