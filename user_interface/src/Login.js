@@ -1,6 +1,6 @@
 import React, { useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import { authAPI } from "./api";
 import { ToastContainer, toast } from "react-toastify";
 import { UserContext } from "./userContext";
 import "react-toastify/dist/ReactToastify.css";
@@ -12,33 +12,45 @@ const Login = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+    if (!username || !password) {
+      toast.error("Please enter username and password");
+      return;
+    }
+
+    setLoading(true);
     try {
-      const response = await axios.post("http://localhost:8080/login", {
-        username,
-        password,
-      });
+      const response = await authAPI.login(username, password);
 
-      setUser(response);
-      localStorage.setItem("user", JSON.stringify(response));
+      // Store user data with token
+      const userData = {
+        token: response.data.token,
+        user: response.data.user
+      };
 
-      console.log(response.data);
+      setUser(userData);
+      localStorage.setItem("user", JSON.stringify(userData));
+
+      console.log("Login successful:", response.data);
       toast.success("Login successful!");
       navigate("/home");
     } catch (error) {
       if (error.response) {
-        if (error.response.status === 404) {
-          toast.error("User not found");
-        } else if (error.response.status === 401) {
-          toast.error("Incorrect password");
+        if (error.response.status === 401) {
+          toast.error("Invalid username or password");
+        } else if (error.response.status === 400) {
+          toast.error(error.response.data.message || "Invalid input");
         } else {
           console.error("Login error:", error.response.data);
-          toast.error(
-            "An error occurred during login. Please try again later."
-          );
+          toast.error("An error occurred during login. Please try again later.");
         }
+      } else {
+        toast.error("Network error. Please check your connection.");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -56,7 +68,7 @@ const Login = () => {
               <h1 className="text">Sign in to </h1>
               <h2 className="text">Our Webpage Quiz project </h2>
               <div className="Paragraphs">
-                <p className="div-1">If you don’t have an account</p>
+                <p className="div-1">If you don't have an account</p>
                 <p className="div-2">
                   You can <Link to="/register">Register here!</Link>
                 </p>
@@ -78,17 +90,20 @@ const Login = () => {
             type="text"
             className="username"
             placeholder="Enter your username"
+            value={username}
             onChange={(e) => setUsername(e.target.value)}
           />
           <input
             type="password"
             className="pass"
             placeholder="Password"
+            value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
           />
 
-          <button className="login" onClick={handleLogin}>
-            Login
+          <button className="login" onClick={handleLogin} disabled={loading}>
+            {loading ? "Logging in..." : "Login"}
           </button>
         </div>
       </div>
@@ -97,3 +112,4 @@ const Login = () => {
   );
 };
 export default Login;
+

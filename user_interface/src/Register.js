@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import { authAPI } from "./api";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./style/Register.css";
@@ -10,26 +10,55 @@ const Register = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState();
+  const [phone, setPhone] = useState("");
   const [isTeacher, setTeacher] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const validateForm = () => {
+    if (!username || username.length < 3) {
+      toast.error("Username must be at least 3 characters");
+      return false;
+    }
+    if (!email || !email.includes('@')) {
+      toast.error("Please enter a valid email");
+      return false;
+    }
+    if (!password || password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return false;
+    }
+    return true;
+  };
 
   const handleRegister = async () => {
+    if (!validateForm()) return;
+
+    setLoading(true);
     try {
-      const response = await axios.post("http://localhost:8080/register", {
+      const response = await authAPI.register({
         email,
         username,
-        phone,
+        phone: phone ? parseInt(phone) : null,
         password,
-        isTeacher,
+        is_teacher: isTeacher,
       });
 
-      console.log(response.data);
-      toast.success("Registration successful!");
-
+      console.log("Registration successful:", response.data);
+      toast.success("Registration successful! Please login.");
       navigate("/");
     } catch (error) {
-      console.error(error);
-      toast.error("An unexpected error occurred. Please try again later.");
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else if (error.response?.data?.errors) {
+        // Handle validation errors
+        const errors = error.response.data.errors;
+        Object.values(errors).forEach(err => toast.error(err));
+      } else {
+        console.error(error);
+        toast.error("An unexpected error occurred. Please try again later.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -69,24 +98,28 @@ const Register = () => {
             type="text"
             className="data"
             placeholder="Enter email"
+            value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
           <input
             type="text"
             className="data"
-            placeholder="Create a username"
+            placeholder="Create a username (min 3 characters)"
+            value={username}
             onChange={(e) => setUsername(e.target.value)}
           />
           <input
             type="text"
             className="data"
-            placeholder="Phone number"
+            placeholder="Phone number (optional)"
+            value={phone}
             onChange={(e) => setPhone(e.target.value)}
           />
           <input
             type="password"
             className="pass"
-            placeholder="Password"
+            placeholder="Password (min 6 characters)"
+            value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
           <div className="teacher-checkbox">
@@ -99,8 +132,8 @@ const Register = () => {
               Are you a teacher?
             </label>
           </div>
-          <button className="register" onClick={handleRegister}>
-            Register
+          <button className="register" onClick={handleRegister} disabled={loading}>
+            {loading ? "Registering..." : "Register"}
           </button>
         </div>
       </div>
@@ -109,3 +142,4 @@ const Register = () => {
   );
 };
 export default Register;
+

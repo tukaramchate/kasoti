@@ -105,9 +105,3 @@ git checkout -b feature/AmazingFeature
 
 5. Open a Pull Request
 
-## Contact
-
-- Email: mehkadiri@gmail.com
-- Twitter: @mehkadiri
-- Instagram: @meh_kadiri
-- portfolio: https://mehkadiri.me

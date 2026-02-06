@@ -1,37 +1,78 @@
 package isil.java_quiz_server.controller;
 
+import isil.java_quiz_server.dto.QuizResultResponse;
+import isil.java_quiz_server.dto.SubmitQuizRequest;
 import isil.java_quiz_server.modal.Quiz;
-import isil.java_quiz_server.repository.QuizRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import isil.java_quiz_server.modal.QuizAttempt;
+import isil.java_quiz_server.security.UserPrincipal;
+import isil.java_quiz_server.service.QuizService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
-@CrossOrigin("http://localhost:3000")
+@RequestMapping("/api/quizzes")
+@CrossOrigin(origins = { "http://localhost:3000", "http://127.0.0.1:3000" })
 public class QuizController {
 
-    @Autowired
-    private QuizRepository quizRepository;
+    private final QuizService quizService;
 
-    @GetMapping("/quizzes")
+    public QuizController(QuizService quizService) {
+        this.quizService = quizService;
+    }
+
+    @GetMapping
     public List<Quiz> getAllQuizzes() {
-        return quizRepository.findAll();
+        return quizService.getAllQuizzes();
     }
 
-    @PostMapping("/quizzes")
-    public Quiz createQuiz(@RequestBody Quiz quiz) {
-        return quizRepository.save(quiz);
-    }
-    @GetMapping("/quizzes/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<Quiz> getQuizById(@PathVariable Long id) {
-        Optional<Quiz> quizOptional = quizRepository.findById(id);
-
-        return quizOptional
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        Quiz quiz = quizService.getQuizById(id);
+        return ResponseEntity.ok(quiz);
     }
 
+    @GetMapping("/my")
+    public List<Quiz> getMyQuizzes(@AuthenticationPrincipal UserPrincipal principal) {
+        return quizService.getQuizzesByUsername(principal.getUsername());
+    }
+
+    @PostMapping
+    public ResponseEntity<Quiz> createQuiz(@Valid @RequestBody Quiz quiz,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        Quiz createdQuiz = quizService.createQuiz(quiz, principal);
+        return new ResponseEntity<>(createdQuiz, HttpStatus.CREATED);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Quiz> updateQuiz(@PathVariable Long id,
+            @Valid @RequestBody Quiz quiz,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        Quiz updatedQuiz = quizService.updateQuiz(id, quiz, principal);
+        return ResponseEntity.ok(updatedQuiz);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteQuiz(@PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        quizService.deleteQuiz(id, principal);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/submit")
+    public ResponseEntity<QuizResultResponse> submitQuiz(@PathVariable Long id,
+            @Valid @RequestBody SubmitQuizRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        QuizResultResponse result = quizService.submitQuiz(id, request, principal);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/{id}/leaderboard")
+    public List<QuizAttempt> getQuizLeaderboard(@PathVariable Long id) {
+        return quizService.getQuizLeaderboard(id);
+    }
 }
