@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import java.util.List;
 
 @Entity
+@Table(name = "question")
 public class Question {
 
     @Id
@@ -12,6 +13,7 @@ public class Question {
     @SequenceGenerator(name = "question_seq", sequenceName = "question_id_seq", allocationSize = 1)
     private Long id;
 
+    @Column(columnDefinition = "TEXT")
     private String text;
 
     @ElementCollection
@@ -21,6 +23,11 @@ public class Question {
 
     @Column(name = "correct_option", nullable = false)
     private String correctOption;
+
+    @Column(nullable = false)
+    private Integer marks = 1;
+
+    // Getters and Setters
 
     public Long getId() {
         return id;
@@ -52,5 +59,13 @@ public class Question {
 
     public void setCorrectOption(String correctOption) {
         this.correctOption = correctOption;
+    }
+
+    public Integer getMarks() {
+        return marks;
+    }
+
+    public void setMarks(Integer marks) {
+        this.marks = marks;
     }
 }

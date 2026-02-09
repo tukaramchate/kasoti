@@ -1,11 +1,14 @@
 package isil.java_quiz_server.config;
 
 import isil.java_quiz_server.security.JwtAuthFilter;
+import isil.java_quiz_server.security.RateLimitFilter;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -22,6 +25,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
@@ -40,6 +44,18 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
+    /**
+     * Rate limiting filter for auth endpoints - prevents brute force attacks.
+     */
+    @Bean
+    public FilterRegistrationBean<RateLimitFilter> rateLimitFilter() {
+        FilterRegistrationBean<RateLimitFilter> registrationBean = new FilterRegistrationBean<>();
+        registrationBean.setFilter(new RateLimitFilter());
+        registrationBean.addUrlPatterns("/api/auth/*");
+        registrationBean.setOrder(1); // Run first
+        return registrationBean;
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -49,13 +65,31 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/health/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/quizzes/share/**").permitAll()
+
+                        // Admin only endpoints
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // Teacher + Admin endpoints
+                        .requestMatchers(HttpMethod.POST, "/api/quizzes").hasAnyRole("ADMIN", "TEACHER")
+                        .requestMatchers(HttpMethod.PUT, "/api/quizzes/**").hasAnyRole("ADMIN", "TEACHER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/quizzes/**").hasAnyRole("ADMIN", "TEACHER")
+                        .requestMatchers("/api/quizzes/*/publish").hasAnyRole("ADMIN", "TEACHER")
+                        .requestMatchers("/api/quizzes/*/close").hasAnyRole("ADMIN", "TEACHER")
+                        .requestMatchers("/api/quizzes/*/students").hasAnyRole("ADMIN", "TEACHER")
+                        .requestMatchers("/api/quizzes/my").hasAnyRole("ADMIN", "TEACHER")
+                        .requestMatchers("/api/dashboard/**").hasAnyRole("ADMIN", "TEACHER")
+
+                        // Public GET endpoints for quizzes (for students)
                         .requestMatchers(HttpMethod.GET, "/api/quizzes/**").permitAll()
-                        // Protected endpoints
-                        .requestMatchers(HttpMethod.POST, "/api/quizzes/**").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/quizzes/**").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/quizzes/**").authenticated()
-                        .requestMatchers("/api/users/**").authenticated()
-                        .requestMatchers("/api/scores/**").authenticated()
+
+                        // Protected endpoints - any authenticated user
+                        .requestMatchers("/api/profile/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/quizzes/*/submit").authenticated()
+                        .requestMatchers("/api/quizzes/*/attempted").authenticated()
+
+                        // Default - require authentication
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -67,8 +101,9 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",
-                "http://127.0.0.1:3000"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                "http://127.0.0.1:3000",
+                "${CORS_ALLOWED_ORIGINS:}"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         configuration.setExposedHeaders(List.of("Authorization"));

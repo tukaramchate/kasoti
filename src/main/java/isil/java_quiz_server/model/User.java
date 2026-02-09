@@ -1,7 +1,6 @@
 package isil.java_quiz_server.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -18,6 +17,10 @@ public class User {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_seq")
     @SequenceGenerator(name = "user_seq", sequenceName = "user_id_seq", allocationSize = 1)
     private Long id;
+
+    @Size(max = 100, message = "Name must be at most 100 characters")
+    @Column(length = 100)
+    private String name;
 
     @NotBlank(message = "Username is required")
     @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
@@ -36,9 +39,9 @@ public class User {
 
     private Long phone;
 
-    @JsonProperty("is_teacher")
-    @Column(name = "is_teacher")
-    private Boolean is_teacher = false;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role = Role.STUDENT;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -55,6 +58,14 @@ public class User {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getUsername() {
@@ -89,12 +100,12 @@ public class User {
         this.phone = phone;
     }
 
-    public Boolean getIs_teacher() {
-        return is_teacher;
+    public Role getRole() {
+        return role;
     }
 
-    public void setIs_teacher(Boolean is_teacher) {
-        this.is_teacher = is_teacher;
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -103,5 +114,18 @@ public class User {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    // Helper methods for role checking
+    public boolean isAdmin() {
+        return role == Role.ADMIN;
+    }
+
+    public boolean isTeacher() {
+        return role == Role.TEACHER;
+    }
+
+    public boolean isStudent() {
+        return role == Role.STUDENT;
     }
 }

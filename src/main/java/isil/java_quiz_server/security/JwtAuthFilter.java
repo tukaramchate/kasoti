@@ -1,5 +1,6 @@
 package isil.java_quiz_server.security;
 
+import isil.java_quiz_server.model.Role;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,19 +35,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
             String username = jwtTokenProvider.getUsernameFromToken(token);
             Long userId = jwtTokenProvider.getUserIdFromToken(token);
-            Boolean isTeacher = jwtTokenProvider.getIsTeacherFromToken(token);
+            Role role = jwtTokenProvider.getRoleFromToken(token);
 
             List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-            authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-            if (Boolean.TRUE.equals(isTeacher)) {
-                authorities.add(new SimpleGrantedAuthority("ROLE_TEACHER"));
-            }
+            // Add role-based authority
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + role.name()));
 
             // Create authentication principal with user info
-            UserPrincipal principal = new UserPrincipal(userId, username, isTeacher);
+            UserPrincipal principal = new UserPrincipal(userId, username, role);
 
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(principal,
-                    null, authorities);
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                    principal, null, authorities);
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }

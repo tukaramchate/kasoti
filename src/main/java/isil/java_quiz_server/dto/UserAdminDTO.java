@@ -1,28 +1,34 @@
 package isil.java_quiz_server.dto;
 
 import isil.java_quiz_server.model.Role;
+import java.time.LocalDateTime;
 
 /**
- * DTO for User that excludes sensitive information like the password.
+ * DTO for admin user management views.
  */
-public class UserDTO {
+public class UserAdminDTO {
     private Long id;
     private String name;
     private String username;
     private String email;
     private Long phone;
     private Role role;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
-    public UserDTO() {
+    public UserAdminDTO() {
     }
 
-    public UserDTO(Long id, String name, String username, String email, Long phone, Role role) {
+    public UserAdminDTO(Long id, String name, String username, String email, Long phone,
+            Role role, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.name = name;
         this.username = username;
         this.email = email;
         this.phone = phone;
         this.role = role;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
 
     public Long getId() {
@@ -71,5 +77,21 @@ public class UserDTO {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

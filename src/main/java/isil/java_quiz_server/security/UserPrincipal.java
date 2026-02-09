@@ -1,18 +1,20 @@
 package isil.java_quiz_server.security;
 
+import isil.java_quiz_server.model.Role;
+
 /**
- * Principal object that holds authenticated user information.
+ * Custom principal to hold authenticated user information.
  */
 public class UserPrincipal {
 
     private final Long id;
     private final String username;
-    private final Boolean isTeacher;
+    private final Role role;
 
-    public UserPrincipal(Long id, String username, Boolean isTeacher) {
+    public UserPrincipal(Long id, String username, Role role) {
         this.id = id;
         this.username = username;
-        this.isTeacher = isTeacher;
+        this.role = role;
     }
 
     public Long getId() {
@@ -23,7 +25,23 @@ public class UserPrincipal {
         return username;
     }
 
-    public Boolean getIsTeacher() {
-        return isTeacher;
+    public Role getRole() {
+        return role;
+    }
+
+    public boolean isAdmin() {
+        return role == Role.ADMIN;
+    }
+
+    public boolean isTeacher() {
+        return role == Role.TEACHER;
+    }
+
+    public boolean isStudent() {
+        return role == Role.STUDENT;
+    }
+
+    public boolean isTeacherOrAdmin() {
+        return role == Role.ADMIN || role == Role.TEACHER;
     }
 }

@@ -1,9 +1,11 @@
 package isil.java_quiz_server.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Entity to track quiz attempts and scores.
@@ -19,10 +21,12 @@ public class QuizAttempt {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler", "password" })
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "quiz_id", nullable = false)
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler", "questions" })
     private Quiz quiz;
 
     @Column(nullable = false)
@@ -30,6 +34,12 @@ public class QuizAttempt {
 
     @Column(name = "total_questions", nullable = false)
     private Integer totalQuestions;
+
+    @Column(name = "total_marks")
+    private Integer totalMarks;
+
+    @Column(name = "marks_obtained")
+    private Integer marksObtained;
 
     @Column(name = "correct_answers")
     private Integer correctAnswers;
@@ -41,7 +51,12 @@ public class QuizAttempt {
     @Column(name = "attempted_at", updatable = false)
     private LocalDateTime attemptedAt;
 
+    @OneToMany(mappedBy = "attempt", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties({ "attempt" })
+    private List<Answer> answers;
+
     // Getters and Setters
+
     public Long getId() {
         return id;
     }
@@ -82,6 +97,22 @@ public class QuizAttempt {
         this.totalQuestions = totalQuestions;
     }
 
+    public Integer getTotalMarks() {
+        return totalMarks;
+    }
+
+    public void setTotalMarks(Integer totalMarks) {
+        this.totalMarks = totalMarks;
+    }
+
+    public Integer getMarksObtained() {
+        return marksObtained;
+    }
+
+    public void setMarksObtained(Integer marksObtained) {
+        this.marksObtained = marksObtained;
+    }
+
     public Integer getCorrectAnswers() {
         return correctAnswers;
     }
@@ -100,5 +131,13 @@ public class QuizAttempt {
 
     public LocalDateTime getAttemptedAt() {
         return attemptedAt;
+    }
+
+    public List<Answer> getAnswers() {
+        return answers;
+    }
+
+    public void setAnswers(List<Answer> answers) {
+        this.answers = answers;
     }
 }

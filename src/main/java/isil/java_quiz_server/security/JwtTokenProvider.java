@@ -3,6 +3,8 @@ package isil.java_quiz_server.security;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import isil.java_quiz_server.model.Role;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -12,25 +14,34 @@ import java.util.Date;
 @Component
 public class JwtTokenProvider {
 
-    @Value("${jwt.secret:mySecretKey123456789012345678901234567890}")
+    @Value("${jwt.secret:}")
     private String jwtSecret;
 
     @Value("${jwt.expiration:86400000}")
     private long jwtExpiration; // 24 hours in milliseconds
+
+    @PostConstruct
+    public void validateSecret() {
+        if (jwtSecret == null || jwtSecret.isEmpty()) {
+            throw new IllegalStateException(
+                    "JWT_SECRET environment variable must be set. " +
+                            "Example: set JWT_SECRET=yourBase64EncodedSecretKey");
+        }
+    }
 
     private SecretKey getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(String username, Long userId, Boolean isTeacher) {
+    public String generateToken(String username, Long userId, Role role) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpiration);
 
         return Jwts.builder()
                 .subject(username)
                 .claim("userId", userId)
-                .claim("isTeacher", isTeacher)
+                .claim("role", role.name())
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())
@@ -57,14 +68,15 @@ public class JwtTokenProvider {
         return claims.get("userId", Long.class);
     }
 
-    public Boolean getIsTeacherFromToken(String token) {
+    public Role getRoleFromToken(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith(getSigningKey())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
 
-        return claims.get("isTeacher", Boolean.class);
+        String roleName = claims.get("role", String.class);
+        return Role.valueOf(roleName);
     }
 
     public boolean validateToken(String token) {
