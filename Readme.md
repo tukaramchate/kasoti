@@ -1,107 +1,188 @@
-# Java Quiz Application
+# 📚 Java Quiz Application
 
-This is a web-based quiz application logic and UI built using Java SpringBoot mySQL database and reactJs. It allows users (teachers) to make quizzes, edit them and delete them and also for normal users to take the quizes and be marked.
+A full-stack quiz management platform built with **Spring Boot** and **React**. Teachers can create, publish, and manage quizzes while students take quizzes, view scores, and compete on leaderboards.
 
-## Table of Contents
+![Java](https://img.shields.io/badge/Java-21-orange)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-green)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue)
+![React](https://img.shields.io/badge/React-18-61DAFB)
 
-- [Features](#features)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Usage](#usage)
-- [Contributing](#contributing)
-- [Contact](#contact)
+---
 
-## Features
+## ✨ Features
 
-- User Authentication:
-  - Login
-  - Register
-- Quizes:
-  - Get All Quizes
-  - Get Quiz by Id
-  - Add Quiz
+### Authentication & Security
+- 🔐 JWT-based authentication
+- 👤 Role-based access (Admin, Teacher, Student)
+- 🔒 Password hashing with BCrypt
+- 🚫 Login attempt rate limiting & account lockout
+- 🔑 Password reset functionality
 
-## Getting Started
+### Quiz Management (Teachers)
+- ➕ Create quizzes with multiple-choice questions
+- ✏️ Edit and delete quizzes
+- 📤 Publish quizzes with shareable links
+- 📊 View student attempts and scores
+- 🔒 Close quizzes to prevent new attempts
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
+### Taking Quizzes (Students)
+- 📝 Attempt published quizzes
+- ⏱️ Time tracking for attempts
+- 📈 View scores and results immediately
+- 📜 Quiz history on profile page
+- 🏆 Leaderboard per quiz
+
+### Admin Dashboard
+- 👥 User management (view, update roles, delete)
+- 📊 System-wide statistics
+- 🗑️ Quiz and attempt management
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Backend** | Java 21, Spring Boot 3.2, Spring Security, Spring Data JPA |
+| **Database** | PostgreSQL |
+| **Authentication** | JWT (JSON Web Tokens) |
+| **Frontend** | React 18, Axios |
+| **Build Tool** | Maven |
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- ReactJs
-- Java
-- Spring
-- SpringBoot
-- MySql
+- Java 21+
+- Maven 3.8+
+- PostgreSQL 15+
+- Node.js 18+ (for frontend)
 
-### Installation
+### Backend Setup
 
-1. Clone the repo :
-
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/tukaramchate/quiz--app.git
+   cd Java-Quiz
    ```
-   git clone https://github.com/mehkad/Java-Quiz.git
-   ```
 
-2. Run phpmyadmin from wamp server and create a database
+2. **Configure the database:**
    
-3. Go to `./srsc/main/resources/application.properties` and change what seems convinient for your usage:
-
+   Create a PostgreSQL database and update `src/main/resources/application.properties`:
+   ```properties
+   spring.datasource.url=jdbc:postgresql://localhost:5432/quiz_db
+   spring.datasource.username=your_username
+   spring.datasource.password=your_password
    ```
 
-   spring.jpa.hibernate.ddl-auto=update
-    spring.datasource.url=jdbc:mysql://localhost:3306/crud
-    spring.datasource.username=root
-    spring.datasource.password=
-    spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+3. **Run the backend:**
+   ```bash
+   ./mvnw spring-boot:run
    ```
    
-4. Go to `./user_interface` and run the following :
+   The API will be available at `http://localhost:8080`
 
-   ```
-       npm i
-   ```
+### Frontend Setup
 
-### Usage
-
-To run the project, you have to run the server part and the client's ui :
-
-1. To start the server on your local machine for development purposes, and using the concurrently module, it is recomended to use the intellij ide , and run the main located at :
-
-   ```
-   ./src/main/java/isil.java_quiz_server/JavaQuizServerApplication.java
+1. **Navigate to frontend directory:**
+   ```bash
+   cd user_interface
    ```
 
-2. To start the ui part, navigate to `./user_interface` and run the following:
-
+2. **Install dependencies:**
+   ```bash
+   npm install
    ```
+
+3. **Start the development server:**
+   ```bash
    npm start
    ```
+   
+   The app will open at `http://localhost:3000`
 
-The application will start running on http://localhost:3000
+---
 
-## Contributing
+## 📖 API Documentation
 
-Any contributions you make are greatly appreciated.
+Full API documentation is available at: [`docs/FRONTEND_API_DOCUMENTATION.md`](docs/FRONTEND_API_DOCUMENTATION.md)
 
-1. Fork the Project.
+### Key Endpoints
 
-2. Create your Feature Branch
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/auth/register` | Register new user |
+| `POST` | `/api/auth/login` | Login and get JWT |
+| `GET` | `/api/quizzes` | Get all quizzes (paginated) |
+| `POST` | `/api/quizzes/{id}/submit` | Submit quiz answers |
+| `GET` | `/api/quizzes/{id}/leaderboard` | Get quiz leaderboard |
+| `GET` | `/api/profile` | Get user profile |
+| `GET` | `/api/dashboard/stats` | Teacher dashboard stats |
+| `GET` | `/api/admin/stats` | System statistics (Admin) |
+
+---
+
+## 🏗️ Project Structure
 
 ```
-git checkout -b feature/AmazingFeature
+Java-Quiz/
+├── src/main/java/isil/java_quiz_server/
+│   ├── controller/       # REST API controllers
+│   ├── dto/              # Data Transfer Objects
+│   ├── exception/        # Custom exceptions & handlers
+│   ├── model/            # JPA entities
+│   ├── repository/       # Spring Data repositories
+│   ├── security/         # JWT & authentication
+│   └── service/          # Business logic
+├── src/main/resources/
+│   └── application.properties
+├── docs/
+│   └── FRONTEND_API_DOCUMENTATION.md
+└── user_interface/       # React frontend
 ```
 
-3. Commit your Changes
+---
 
-```
-   git commit -m 'Add some AmazingFeature'
+## 🔒 User Roles
+
+| Role | Permissions |
+|------|-------------|
+| **STUDENT** | Take quizzes, view scores, access leaderboards |
+| **TEACHER** | All student permissions + create/manage quizzes |
+| **ADMIN** | All permissions + user management, system stats |
+
+---
+
+## 🧪 Running Tests
+
+```bash
+# Run all tests
+./mvnw test
+
+# Run with coverage
+./mvnw test jacoco:report
 ```
 
-4. Push to the Branch
+---
 
-```
-   git push origin feature/AmazingFeature
-```
+## 🤝 Contributing
 
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
 5. Open a Pull Request
 
+---
+
+## 📝 License
+
+This project is open-source and available under the MIT License.
+
+---
+
+## 📧 Contact
+
+For questions or support, please open an issue on GitHub.
