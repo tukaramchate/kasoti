@@ -2,10 +2,18 @@ package isil.java_quiz_server.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * Entity to track individual question answers within a quiz attempt.
  */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "answer")
 public class Answer {
@@ -32,55 +40,21 @@ public class Answer {
     private Boolean isCorrect;
 
     @Column(name = "marks_obtained")
+    @Builder.Default
     private Integer marksObtained = 0;
 
-    // Getters and Setters
-
-    public Long getId() {
-        return id;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        Answer answer = (Answer) o;
+        return id != null && id.equals(answer.id);
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public QuizAttempt getAttempt() {
-        return attempt;
-    }
-
-    public void setAttempt(QuizAttempt attempt) {
-        this.attempt = attempt;
-    }
-
-    public Question getQuestion() {
-        return question;
-    }
-
-    public void setQuestion(Question question) {
-        this.question = question;
-    }
-
-    public String getSelectedOption() {
-        return selectedOption;
-    }
-
-    public void setSelectedOption(String selectedOption) {
-        this.selectedOption = selectedOption;
-    }
-
-    public Boolean getIsCorrect() {
-        return isCorrect;
-    }
-
-    public void setIsCorrect(Boolean isCorrect) {
-        this.isCorrect = isCorrect;
-    }
-
-    public Integer getMarksObtained() {
-        return marksObtained;
-    }
-
-    public void setMarksObtained(Integer marksObtained) {
-        this.marksObtained = marksObtained;
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
     }
 }

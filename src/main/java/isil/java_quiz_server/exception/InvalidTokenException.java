@@ -1,14 +1,11 @@
 package isil.java_quiz_server.exception;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
- * Exception thrown when JWT token is invalid or expired.
- * Returns HTTP 401 Unauthorized.
+ * Exception thrown when a JWT token is invalid or expired.
  */
-@ResponseStatus(HttpStatus.UNAUTHORIZED)
-public class InvalidTokenException extends RuntimeException {
+public class InvalidTokenException extends BaseAppException {
 
     public InvalidTokenException(String message) {
         super(message);
@@ -20,5 +17,15 @@ public class InvalidTokenException extends RuntimeException {
 
     public InvalidTokenException() {
         super("Invalid or expired authentication token");
+    }
+
+    @Override
+    public HttpStatus getStatus() {
+        return HttpStatus.UNAUTHORIZED;
+    }
+
+    @Override
+    public String getErrorCode() {
+        return "INVALID_TOKEN";
     }
 }

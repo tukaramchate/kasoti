@@ -2,6 +2,10 @@ package isil.java_quiz_server.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -10,6 +14,10 @@ import java.util.List;
 /**
  * Entity to track quiz attempts and scores.
  */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "quiz_attempt")
 public class QuizAttempt {
@@ -55,89 +63,18 @@ public class QuizAttempt {
     @JsonIgnoreProperties({ "attempt" })
     private List<Answer> answers;
 
-    // Getters and Setters
-
-    public Long getId() {
-        return id;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        QuizAttempt that = (QuizAttempt) o;
+        return id != null && id.equals(that.id);
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public Quiz getQuiz() {
-        return quiz;
-    }
-
-    public void setQuiz(Quiz quiz) {
-        this.quiz = quiz;
-    }
-
-    public Integer getScore() {
-        return score;
-    }
-
-    public void setScore(Integer score) {
-        this.score = score;
-    }
-
-    public Integer getTotalQuestions() {
-        return totalQuestions;
-    }
-
-    public void setTotalQuestions(Integer totalQuestions) {
-        this.totalQuestions = totalQuestions;
-    }
-
-    public Integer getTotalMarks() {
-        return totalMarks;
-    }
-
-    public void setTotalMarks(Integer totalMarks) {
-        this.totalMarks = totalMarks;
-    }
-
-    public Integer getMarksObtained() {
-        return marksObtained;
-    }
-
-    public void setMarksObtained(Integer marksObtained) {
-        this.marksObtained = marksObtained;
-    }
-
-    public Integer getCorrectAnswers() {
-        return correctAnswers;
-    }
-
-    public void setCorrectAnswers(Integer correctAnswers) {
-        this.correctAnswers = correctAnswers;
-    }
-
-    public Integer getTimeTakenSeconds() {
-        return timeTakenSeconds;
-    }
-
-    public void setTimeTakenSeconds(Integer timeTakenSeconds) {
-        this.timeTakenSeconds = timeTakenSeconds;
-    }
-
-    public LocalDateTime getAttemptedAt() {
-        return attemptedAt;
-    }
-
-    public List<Answer> getAnswers() {
-        return answers;
-    }
-
-    public void setAnswers(List<Answer> answers) {
-        this.answers = answers;
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
     }
 }

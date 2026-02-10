@@ -1,10 +1,11 @@
 package isil.java_quiz_server.exception;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
-@ResponseStatus(HttpStatus.BAD_REQUEST)
-public class BadRequestException extends RuntimeException {
+/**
+ * Exception thrown for invalid client requests.
+ */
+public class BadRequestException extends BaseAppException {
 
     public BadRequestException(String message) {
         super(message);
@@ -12,5 +13,15 @@ public class BadRequestException extends RuntimeException {
 
     public BadRequestException(String message, Throwable cause) {
         super(message, cause);
+    }
+
+    @Override
+    public HttpStatus getStatus() {
+        return HttpStatus.BAD_REQUEST;
+    }
+
+    @Override
+    public String getErrorCode() {
+        return "BAD_REQUEST";
     }
 }

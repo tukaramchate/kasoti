@@ -1,5 +1,4 @@
 import React from 'react';
-import '../style/Home.css';
 
 const StatsCard = ({ value, label }) => {
     return (

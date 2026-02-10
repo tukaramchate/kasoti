@@ -13,26 +13,18 @@ import isil.java_quiz_server.model.User;
 import isil.java_quiz_server.repository.UserRepository;
 import isil.java_quiz_server.security.JwtTokenProvider;
 import isil.java_quiz_server.security.LoginAttemptService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final LoginAttemptService loginAttemptService;
-
-    public AuthService(UserRepository userRepository,
-            PasswordEncoder passwordEncoder,
-            JwtTokenProvider jwtTokenProvider,
-            LoginAttemptService loginAttemptService) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtTokenProvider = jwtTokenProvider;
-        this.loginAttemptService = loginAttemptService;
-    }
 
     /**
      * Register a new user with password hashing.
@@ -52,23 +44,21 @@ public class AuthService {
         // ADMIN can only be created by existing admin (handled elsewhere)
         Role role = request.getRole();
         if (role == Role.ADMIN) {
-            // Regular registration cannot create admins
             throw new BadRequestException("Admin accounts cannot be created through registration");
         }
         if (role == null) {
             role = Role.STUDENT;
         }
 
-        // Create new user with hashed password
-        User user = new User();
-        user.setName(request.getName());
-        user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword())); // Hash password!
-        user.setPhone(request.getPhone());
-        user.setRole(role);
-
-        User savedUser = userRepository.save(user);
+        // Create new user with hashed password using builder
+        User savedUser = userRepository.save(User.builder()
+                .name(request.getName())
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .phone(request.getPhone())
+                .role(role)
+                .build());
 
         // Generate JWT token
         String token = jwtTokenProvider.generateToken(
@@ -76,9 +66,7 @@ public class AuthService {
                 savedUser.getId(),
                 savedUser.getRole());
 
-        // Return response with token and user DTO (no password)
-        UserDTO userDTO = convertToDTO(savedUser);
-        return new AuthResponse(token, userDTO);
+        return new AuthResponse(token, convertToDTO(savedUser), "Registration successful");
     }
 
     /**
@@ -122,24 +110,19 @@ public class AuthService {
                 user.getId(),
                 user.getRole());
 
-        // Return response with token and user DTO (no password)
-        UserDTO userDTO = convertToDTO(user);
-        return new AuthResponse(token, userDTO);
+        return new AuthResponse(token, convertToDTO(user));
     }
 
     /**
      * Change user password.
      */
     public void changePassword(String username, String currentPassword, String newPassword) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+        User user = findUserByUsername(username);
 
-        // Verify current password
         if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
             throw new BadRequestException("Current password is incorrect");
         }
 
-        // Update password
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
     }
@@ -148,24 +131,19 @@ public class AuthService {
      * Get user profile by username.
      */
     public UserDTO getProfile(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
-        return convertToDTO(user);
+        return convertToDTO(findUserByUsername(username));
     }
 
     /**
      * Update user profile.
      */
-    public UserDTO updateProfile(String username, String name, String email, Long phone) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+    public UserDTO updateProfile(String username, String name, String email, String phone) {
+        User user = findUserByUsername(username);
 
-        // Update name if provided
         if (name != null) {
             user.setName(name);
         }
 
-        // Check if email already exists for another user
         if (email != null && !email.equals(user.getEmail())) {
             if (userRepository.findByEmail(email).isPresent()) {
                 throw new BadRequestException("Email already exists");
@@ -177,20 +155,24 @@ public class AuthService {
             user.setPhone(phone);
         }
 
-        User updatedUser = userRepository.save(user);
-        return convertToDTO(updatedUser);
+        return convertToDTO(userRepository.save(user));
     }
 
-    /**
-     * Convert User entity to UserDTO (excludes password).
-     */
+    // ========== Helper Methods ==========
+
+    private User findUserByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+    }
+
     private UserDTO convertToDTO(User user) {
-        return new UserDTO(
-                user.getId(),
-                user.getName(),
-                user.getUsername(),
-                user.getEmail(),
-                user.getPhone(),
-                user.getRole());
+        return UserDTO.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .role(user.getRole())
+                .build();
     }
 }

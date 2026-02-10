@@ -1,15 +1,12 @@
 package isil.java_quiz_server.exception;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
  * Exception thrown when an account is locked due to too many failed login
  * attempts.
- * Returns HTTP 423 Locked.
  */
-@ResponseStatus(HttpStatus.LOCKED)
-public class AccountLockedException extends RuntimeException {
+public class AccountLockedException extends BaseAppException {
 
     private final long remainingMinutes;
 
@@ -30,5 +27,15 @@ public class AccountLockedException extends RuntimeException {
 
     public long getRemainingMinutes() {
         return remainingMinutes;
+    }
+
+    @Override
+    public HttpStatus getStatus() {
+        return HttpStatus.LOCKED;
+    }
+
+    @Override
+    public String getErrorCode() {
+        return "ACCOUNT_LOCKED";
     }
 }

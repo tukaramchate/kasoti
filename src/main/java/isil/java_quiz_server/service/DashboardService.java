@@ -2,11 +2,13 @@ package isil.java_quiz_server.service;
 
 import isil.java_quiz_server.dto.DashboardStatsDTO;
 import isil.java_quiz_server.dto.QuizStatisticsDTO;
+import isil.java_quiz_server.exception.ResourceNotFoundException;
 import isil.java_quiz_server.model.Quiz;
 import isil.java_quiz_server.model.QuizAttempt;
 import isil.java_quiz_server.model.QuizStatus;
 import isil.java_quiz_server.repository.QuizAttemptRepository;
 import isil.java_quiz_server.repository.QuizRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,39 +22,31 @@ import java.util.stream.Collectors;
  * Service for teacher dashboard operations.
  */
 @Service
+@RequiredArgsConstructor
 public class DashboardService {
 
     private final QuizRepository quizRepository;
     private final QuizAttemptRepository quizAttemptRepository;
 
-    public DashboardService(QuizRepository quizRepository,
-            QuizAttemptRepository quizAttemptRepository) {
-        this.quizRepository = quizRepository;
-        this.quizAttemptRepository = quizAttemptRepository;
-    }
-
     /**
      * Get teacher's dashboard statistics.
      */
     public DashboardStatsDTO getTeacherStats(Long teacherId) {
-        DashboardStatsDTO stats = new DashboardStatsDTO();
-
-        stats.setTotalQuizzes(quizRepository.countByCreatedById(teacherId));
-        stats.setPublishedQuizzes(quizRepository.countByCreatedByIdAndStatus(teacherId, QuizStatus.PUBLISHED));
-        stats.setDraftQuizzes(quizRepository.countByCreatedByIdAndStatus(teacherId, QuizStatus.DRAFT));
-        stats.setClosedQuizzes(quizRepository.countByCreatedByIdAndStatus(teacherId, QuizStatus.CLOSED));
-        stats.setTotalAttempts(quizAttemptRepository.countByQuizCreatedById(teacherId));
-        stats.setAverageScore(quizAttemptRepository.findAverageScoreByTeacherId(teacherId));
-
-        return stats;
+        return DashboardStatsDTO.builder()
+                .totalQuizzes(quizRepository.countByCreatedById(teacherId))
+                .publishedQuizzes(quizRepository.countByCreatedByIdAndStatus(teacherId, QuizStatus.PUBLISHED))
+                .draftQuizzes(quizRepository.countByCreatedByIdAndStatus(teacherId, QuizStatus.DRAFT))
+                .closedQuizzes(quizRepository.countByCreatedByIdAndStatus(teacherId, QuizStatus.CLOSED))
+                .totalAttempts(quizAttemptRepository.countByQuizCreatedById(teacherId))
+                .averageScore(quizAttemptRepository.findAverageScoreByTeacherId(teacherId))
+                .build();
     }
 
     /**
      * Get teacher's quizzes with statistics.
      */
     public List<QuizStatisticsDTO> getTeacherQuizzesWithStats(Long teacherId) {
-        List<Quiz> quizzes = quizRepository.findByCreatedById(teacherId);
-        return quizzes.stream()
+        return quizRepository.findByCreatedById(teacherId).stream()
                 .map(this::convertToStatisticsDTO)
                 .collect(Collectors.toList());
     }
@@ -79,24 +73,24 @@ public class DashboardService {
      */
     public QuizStatisticsDTO getQuizStatistics(Long quizId) {
         Quiz quiz = quizRepository.findById(quizId)
-                .orElseThrow(() -> new RuntimeException("Quiz not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Quiz", "id", quizId));
         return convertToStatisticsDTO(quiz);
     }
 
     // ========== Helper Methods ==========
 
     private QuizStatisticsDTO convertToStatisticsDTO(Quiz quiz) {
-        QuizStatisticsDTO dto = new QuizStatisticsDTO();
-        dto.setId(quiz.getId());
-        dto.setTitle(quiz.getTitle());
-        dto.setDescription(quiz.getDescription());
-        dto.setCategory(quiz.getCategory());
-        dto.setStatus(quiz.getStatus());
-        dto.setShareCode(quiz.getShareCode());
-        dto.setQuestionCount(quiz.getQuestions() != null ? quiz.getQuestions().size() : 0);
-        dto.setTotalMarks(quiz.getTotalMarks());
-        dto.setAttemptCount(quizAttemptRepository.countByQuizId(quiz.getId()));
-        dto.setAverageScore(quizAttemptRepository.findAverageScoreByQuizId(quiz.getId()));
-        return dto;
+        return QuizStatisticsDTO.builder()
+                .id(quiz.getId())
+                .title(quiz.getTitle())
+                .description(quiz.getDescription())
+                .category(quiz.getCategory())
+                .status(quiz.getStatus())
+                .shareCode(quiz.getShareCode())
+                .questionCount(quiz.getQuestions() != null ? quiz.getQuestions().size() : 0)
+                .totalMarks(quiz.getTotalMarks())
+                .attemptCount(quizAttemptRepository.countByQuizId(quiz.getId()))
+                .averageScore(quizAttemptRepository.findAverageScoreByQuizId(quiz.getId()))
+                .build();
     }
 }

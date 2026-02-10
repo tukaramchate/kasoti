@@ -3,18 +3,31 @@ package isil.java_quiz_server.controller;
 import isil.java_quiz_server.dto.PublishQuizResponse;
 import isil.java_quiz_server.dto.QuizDTO;
 import isil.java_quiz_server.dto.QuizResultResponse;
+import isil.java_quiz_server.dto.QuizSummaryDTO;
 import isil.java_quiz_server.dto.SubmitQuizRequest;
 import isil.java_quiz_server.model.Quiz;
 import isil.java_quiz_server.model.QuizAttempt;
 import isil.java_quiz_server.security.UserPrincipal;
+import isil.java_quiz_server.service.ExportService;
 import isil.java_quiz_server.service.QuizService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -23,19 +36,35 @@ import java.util.Map;
 public class QuizController {
 
     private final QuizService quizService;
+    private final ExportService exportService;
 
-    public QuizController(QuizService quizService) {
+    public QuizController(QuizService quizService, ExportService exportService) {
         this.quizService = quizService;
+        this.exportService = exportService;
     }
 
     // ========== Public Endpoints ==========
 
+    /**
+     * Get quizzes with pagination and optional filters.
+     * Supports search, category, difficulty, and tags filtering.
+     */
     @GetMapping
-    public ResponseEntity<Page<QuizDTO>> getQuizzes(
+    public ResponseEntity<Page<QuizSummaryDTO>> getQuizzes(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) String category) {
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String difficulty,
+            @RequestParam(required = false) String tags) {
+
+        // If filters are provided, use enhanced search
+        if (difficulty != null || tags != null) {
+            return ResponseEntity.ok(quizService.searchQuizzesWithFilters(
+                    search, category, difficulty, tags, page, size));
+        }
+
+        // Legacy search without filters
         if (search != null && category != null) {
             return ResponseEntity.ok(quizService.searchQuizzesByCategory(search, category, page, size));
         } else if (search != null) {
@@ -128,7 +157,49 @@ public class QuizController {
     @GetMapping("/{id}/students")
     public ResponseEntity<List<QuizAttempt>> getQuizStudents(
             @PathVariable Long id,
+            @RequestParam(required = false, defaultValue = "score_desc") String sort,
             @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(quizService.getQuizStudents(id, principal));
+        return ResponseEntity.ok(quizService.getQuizStudents(id, principal, sort));
     }
+
+    // ========== Export Endpoints ==========
+
+    /**
+     * Export a quiz as JSON file.
+     * Only the quiz creator can export.
+     */
+    @GetMapping("/{id}/export")
+    public ResponseEntity<String> exportQuiz(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) throws IOException {
+        String jsonContent = exportService.exportQuizAsJson(id, principal);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setContentDispositionFormData("attachment", "quiz-" + id + ".json");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(jsonContent);
+    }
+
+    /**
+     * Export quiz attempts as CSV file.
+     * Only the quiz creator can export attempts.
+     */
+    @GetMapping("/{id}/attempts/export")
+    public ResponseEntity<String> exportAttempts(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        String csvContent = exportService.exportAttemptsAsCsv(id, principal);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.CONTENT_TYPE, "text/csv");
+        headers.setContentDispositionFormData("attachment", "quiz-" + id + "-attempts.csv");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(csvContent);
+    }
+
 }

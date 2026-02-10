@@ -1,8 +1,13 @@
 package isil.java_quiz_server.dto;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 /**
  * Response DTO for login - contains JWT token and user info (without password).
  */
+@Data
+@NoArgsConstructor
 public class AuthResponse {
 
     private String token;
@@ -10,51 +15,21 @@ public class AuthResponse {
     private UserDTO user;
     private String message;
 
-    public AuthResponse() {
-    }
-
     public AuthResponse(String token, UserDTO user) {
         this.token = token;
         this.user = user;
         this.message = "Login successful";
     }
 
+    public AuthResponse(String token, UserDTO user, String message) {
+        this.token = token;
+        this.user = user;
+        this.message = message;
+    }
+
     public AuthResponse(String message, boolean error) {
         this.message = message;
         this.token = null;
         this.user = null;
-    }
-
-    // Getters and Setters
-    public String getToken() {
-        return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public UserDTO getUser() {
-        return user;
-    }
-
-    public void setUser(UserDTO user) {
-        this.user = user;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
     }
 }

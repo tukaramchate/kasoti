@@ -1,75 +1,23 @@
 package isil.java_quiz_server.dto;
 
 import isil.java_quiz_server.model.Role;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * DTO for User that excludes sensitive information like the password.
  */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class UserDTO {
     private Long id;
     private String name;
     private String username;
     private String email;
-    private Long phone;
+    private String phone;
     private Role role;
-
-    public UserDTO() {
-    }
-
-    public UserDTO(Long id, String name, String username, String email, Long phone, Role role) {
-        this.id = id;
-        this.name = name;
-        this.username = username;
-        this.email = email;
-        this.phone = phone;
-        this.role = role;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public Long getPhone() {
-        return phone;
-    }
-
-    public void setPhone(Long phone) {
-        this.phone = phone;
-    }
-
-    public Role getRole() {
-        return role;
-    }
-
-    public void setRole(Role role) {
-        this.role = role;
-    }
 }

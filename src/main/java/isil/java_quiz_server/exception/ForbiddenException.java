@@ -1,15 +1,12 @@
 package isil.java_quiz_server.exception;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
  * Exception thrown when a user tries to access a resource they don't have
  * permission for.
- * Returns HTTP 403 Forbidden.
  */
-@ResponseStatus(HttpStatus.FORBIDDEN)
-public class ForbiddenException extends RuntimeException {
+public class ForbiddenException extends BaseAppException {
 
     public ForbiddenException(String message) {
         super(message);
@@ -21,5 +18,15 @@ public class ForbiddenException extends RuntimeException {
 
     public ForbiddenException(String resource, String action) {
         super(String.format("Access denied: You don't have permission to %s this %s", action, resource));
+    }
+
+    @Override
+    public HttpStatus getStatus() {
+        return HttpStatus.FORBIDDEN;
+    }
+
+    @Override
+    public String getErrorCode() {
+        return "FORBIDDEN";
     }
 }

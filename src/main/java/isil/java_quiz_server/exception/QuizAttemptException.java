@@ -1,14 +1,11 @@
 package isil.java_quiz_server.exception;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
  * Exception thrown when a quiz attempt is not allowed.
- * Returns HTTP 400 Bad Request.
  */
-@ResponseStatus(HttpStatus.BAD_REQUEST)
-public class QuizAttemptException extends RuntimeException {
+public class QuizAttemptException extends BaseAppException {
 
     public QuizAttemptException(String message) {
         super(message);
@@ -31,5 +28,15 @@ public class QuizAttemptException extends RuntimeException {
     public static QuizAttemptException timeExpired(Long quizId) {
         return new QuizAttemptException(
                 String.format("Time has expired for quiz with ID: %d", quizId));
+    }
+
+    @Override
+    public HttpStatus getStatus() {
+        return HttpStatus.BAD_REQUEST;
+    }
+
+    @Override
+    public String getErrorCode() {
+        return "QUIZ_ATTEMPT_ERROR";
     }
 }

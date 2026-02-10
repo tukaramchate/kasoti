@@ -1,9 +1,20 @@
 package isil.java_quiz_server.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "question")
 public class Question {
@@ -13,7 +24,8 @@ public class Question {
     @SequenceGenerator(name = "question_seq", sequenceName = "question_id_seq", allocationSize = 1)
     private Long id;
 
-    @Column(columnDefinition = "TEXT")
+    @NotBlank(message = "Question text is required")
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String text;
 
     @ElementCollection
@@ -21,51 +33,27 @@ public class Question {
     @Column(name = "options")
     private List<String> options;
 
+    @NotNull(message = "Correct option is required")
     @Column(name = "correct_option", nullable = false)
     private String correctOption;
 
+    @Min(value = 1, message = "Marks must be at least 1")
     @Column(nullable = false)
+    @Builder.Default
     private Integer marks = 1;
 
-    // Getters and Setters
-
-    public Long getId() {
-        return id;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        Question question = (Question) o;
+        return id != null && id.equals(question.id);
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getText() {
-        return text;
-    }
-
-    public void setText(String text) {
-        this.text = text;
-    }
-
-    public List<String> getOptions() {
-        return options;
-    }
-
-    public void setOptions(List<String> options) {
-        this.options = options;
-    }
-
-    public String getCorrectOption() {
-        return correctOption;
-    }
-
-    public void setCorrectOption(String correctOption) {
-        this.correctOption = correctOption;
-    }
-
-    public Integer getMarks() {
-        return marks;
-    }
-
-    public void setMarks(Integer marks) {
-        this.marks = marks;
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
     }
 }

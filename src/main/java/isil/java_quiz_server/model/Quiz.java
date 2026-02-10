@@ -2,11 +2,22 @@ package isil.java_quiz_server.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "quiz")
 public class Quiz {
@@ -16,6 +27,7 @@ public class Quiz {
     @SequenceGenerator(name = "quiz_seq", sequenceName = "quiz_id_seq", allocationSize = 1)
     private Long id;
 
+    @NotBlank(message = "Title is required")
     @Column(nullable = false)
     private String title;
 
@@ -28,10 +40,13 @@ public class Quiz {
     private User createdBy;
 
     @Column
+    @Builder.Default
     private String category = "General";
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @NotNull(message = "Status is required")
+    @Builder.Default
     private QuizStatus status = QuizStatus.DRAFT;
 
     @Column(name = "share_code", unique = true)
@@ -41,6 +56,7 @@ public class Quiz {
      * Time limit in minutes for completing the quiz.
      * Null means no time limit.
      */
+    @Min(value = 1, message = "Time limit must be at least 1 minute")
     @Column(name = "time_limit_minutes")
     private Integer timeLimitMinutes;
 
@@ -58,6 +74,53 @@ public class Quiz {
     @Column(name = "end_time")
     private LocalDateTime endTime;
 
+    // ========== Quiz Settings ==========
+
+    /**
+     * Enable negative marking for wrong answers.
+     * Default: false (no penalty for wrong answers).
+     */
+    @Column(name = "negative_marking")
+    @Builder.Default
+    private Boolean negativeMarking = false;
+
+    /**
+     * Shuffle question order for each student.
+     * Default: false (questions shown in original order).
+     */
+    @Column(name = "shuffle_questions")
+    @Builder.Default
+    private Boolean shuffleQuestions = false;
+
+    /**
+     * Shuffle answer options for each question.
+     * Default: false (options shown in original order).
+     */
+    @Column(name = "shuffle_options")
+    @Builder.Default
+    private Boolean shuffleOptions = false;
+
+    /**
+     * Minimum percentage required to pass the quiz.
+     * Null means no pass/fail threshold.
+     */
+    @Column(name = "pass_percentage")
+    private Integer passPercentage;
+
+    /**
+     * Difficulty level of the quiz.
+     * Values: EASY, MEDIUM, HARD
+     */
+    @Column(name = "difficulty", length = 10)
+    private String difficulty;
+
+    /**
+     * Comma-separated tags for better quiz discovery.
+     * Example: "java,spring,testing"
+     */
+    @Column(name = "tags", length = 500)
+    private String tags;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -65,100 +128,6 @@ public class Quiz {
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "quiz_id")
     private List<Question> questions;
-
-    // Getters and Setters
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public User getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(User createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public String getCategory() {
-        return category;
-    }
-
-    public void setCategory(String category) {
-        this.category = category;
-    }
-
-    public QuizStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(QuizStatus status) {
-        this.status = status;
-    }
-
-    public String getShareCode() {
-        return shareCode;
-    }
-
-    public void setShareCode(String shareCode) {
-        this.shareCode = shareCode;
-    }
-
-    public Integer getTimeLimitMinutes() {
-        return timeLimitMinutes;
-    }
-
-    public void setTimeLimitMinutes(Integer timeLimitMinutes) {
-        this.timeLimitMinutes = timeLimitMinutes;
-    }
-
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
-
-    public void setStartTime(LocalDateTime startTime) {
-        this.startTime = startTime;
-    }
-
-    public LocalDateTime getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(LocalDateTime endTime) {
-        this.endTime = endTime;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public List<Question> getQuestions() {
-        return questions;
-    }
-
-    public void setQuestions(List<Question> questions) {
-        this.questions = questions;
-    }
 
     /**
      * Check if the quiz is currently available based on status and start/end times.
@@ -208,5 +177,20 @@ public class Quiz {
         return questions.stream()
                 .mapToInt(q -> q.getMarks() != null ? q.getMarks() : 1)
                 .sum();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        Quiz quiz = (Quiz) o;
+        return id != null && id.equals(quiz.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,7 +21,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -60,34 +60,40 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/health/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/quizzes/share/**").permitAll()
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/health/**",
+                                "/api/public/**")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/quizzes/share/**", "/api/quizzes/**").permitAll()
 
                         // Admin only endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                        // Teacher + Admin endpoints
+                        // Teacher + Admin endpoints (General)
+                        .requestMatchers(
+                                "/api/quizzes/*/publish",
+                                "/api/quizzes/*/close",
+                                "/api/quizzes/*/students",
+                                "/api/quizzes/my",
+                                "/api/dashboard/**")
+                        .hasAnyRole("ADMIN", "TEACHER")
+
+                        // Teacher + Admin endpoints (Method Specific)
                         .requestMatchers(HttpMethod.POST, "/api/quizzes").hasAnyRole("ADMIN", "TEACHER")
                         .requestMatchers(HttpMethod.PUT, "/api/quizzes/**").hasAnyRole("ADMIN", "TEACHER")
                         .requestMatchers(HttpMethod.DELETE, "/api/quizzes/**").hasAnyRole("ADMIN", "TEACHER")
-                        .requestMatchers("/api/quizzes/*/publish").hasAnyRole("ADMIN", "TEACHER")
-                        .requestMatchers("/api/quizzes/*/close").hasAnyRole("ADMIN", "TEACHER")
-                        .requestMatchers("/api/quizzes/*/students").hasAnyRole("ADMIN", "TEACHER")
-                        .requestMatchers("/api/quizzes/my").hasAnyRole("ADMIN", "TEACHER")
-                        .requestMatchers("/api/dashboard/**").hasAnyRole("ADMIN", "TEACHER")
-
-                        // Public GET endpoints for quizzes (for students)
-                        .requestMatchers(HttpMethod.GET, "/api/quizzes/**").permitAll()
 
                         // Protected endpoints - any authenticated user
-                        .requestMatchers("/api/profile/**").authenticated()
+                        .requestMatchers(
+                                "/api/profile/**",
+                                "/api/quizzes/*/attempted")
+                        .authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/quizzes/*/submit").authenticated()
-                        .requestMatchers("/api/quizzes/*/attempted").authenticated()
 
                         // Default - require authentication
                         .anyRequest().authenticated())
@@ -99,11 +105,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(
+        configuration.setAllowedOrigins(List.of(
                 "http://localhost:3000",
                 "http://127.0.0.1:3000",
                 "${CORS_ALLOWED_ORIGINS:}"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         configuration.setExposedHeaders(List.of("Authorization"));

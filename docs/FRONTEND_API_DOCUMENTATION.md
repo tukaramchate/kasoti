@@ -10,14 +10,20 @@
 1. [Authentication](#authentication)
 2. [Quizzes](#quizzes)
 3. [Profile](#profile)
-4. [Dashboard (Teacher)](#dashboard-teacher)
+4. [Dashboard (Teacher/Admin)](#dashboard-teacheradmin)
 5. [Admin](#admin)
-6. [Data Models](#data-models)
-7. [Error Handling](#error-handling)
+6. [Health Check](#health-check)
+7. [Data Models](#data-models)
+8. [Error Handling](#error-handling)
 
 ---
 
 ## Authentication
+
+All authenticated endpoints require a JWT token in the `Authorization` header:
+```
+Authorization: Bearer <token>
+```
 
 ### Register User
 ```
@@ -43,7 +49,8 @@ POST /api/auth/register
 - At least one digit
 - At least one special character (@$!%*?&#)
 
-**Roles:** `STUDENT` (default), `TEACHER`
+**Roles:** `STUDENT` (default), `TEACHER`  
+> ⚠️ Note: `ADMIN` role cannot be created through registration
 
 **Response (201 Created):**
 ```json
@@ -58,7 +65,7 @@ POST /api/auth/register
     "phone": 1234567890,
     "role": "STUDENT"
   },
-  "message": "Login successful"
+  "message": "Registration successful"
 }
 ```
 
@@ -94,7 +101,9 @@ POST /api/auth/login
 }
 ```
 
-> **Note:** Store the token and include it in all authenticated requests as: `Authorization: Bearer <token>`
+**Security Features:**
+- Account lockout after 5 failed attempts (30 minutes)
+- Provides remaining attempts on failure
 
 ---
 
@@ -113,10 +122,12 @@ POST /api/auth/forgot-password
 **Response:**
 ```json
 {
-  "message": "Password reset token generated...",
-  "token": "abc123..."
+  "message": "Password reset token generated. In production, check your email.",
+  "token": "abc123xyz"
 }
 ```
+
+> ⚠️ **Development Mode:** Token is returned in response for testing. In production, it would be sent via email.
 
 ---
 
@@ -128,7 +139,7 @@ POST /api/auth/reset-password
 **Request Body:**
 ```json
 {
-  "token": "abc123...",
+  "token": "abc123xyz",
   "newPassword": "NewPassword@123"
 }
 ```
@@ -142,57 +153,48 @@ POST /api/auth/reset-password
 
 ---
 
-## Quizzes
+##Quizzes
 
-> All quiz endpoints require authentication unless marked as public.
-
-### Get All Quizzes (Paginated)
+### Get Quizzes (Paginated)
 ```
 GET /api/quizzes?page=0&size=10&search=java&category=Programming
 ```
 
 **Query Parameters:**
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| page | int | No | Page number (default: 0) |
-| size | int | No | Items per page (default: 10) |
-| search | string | No | Search by title |
-| category | string | No | Filter by category |
 
-**Response:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | Integer | 0 | Page number (0-indexed) |
+| `size` | Integer | 10 | Items per page |
+| `search` | String | null | Search by title |
+| `category` | String | null | Filter by category |
+
+**Response:** Returns `QuizSummaryDTO` (lightweight, no questions)
 ```json
 {
   "content": [
     {
       "id": 1,
       "title": "Java Basics",
-      "description": "Introduction to Java",
+      "description": "Test your Java knowledge",
       "category": "Programming",
       "status": "PUBLISHED",
-      "totalMarks": 50,
+      "creatorUsername": "teacher1",
       "questionCount": 10,
-      "shareCode": "ABC12345",
-      "questions": [
-        {
-          "id": 1,
-          "text": "What is Java?",
-          "optionA": "A programming language",
-          "optionB": "A coffee brand",
-          "optionC": "An island",
-          "optionD": "None",
-          "marks": 5
-        }
-      ]
+      "totalMarks": 50,
+      "shareCode": "ABC12345"
     }
   ],
-  "totalPages": 5,
-  "totalElements": 50,
-  "number": 0,
-  "size": 10
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 10
+  },
+  "totalElements": 1,
+  "totalPages": 1
 }
 ```
 
-> **Note:** Correct answers are NOT included in student-facing responses.
+> 📝 **Note:** List endpoints return `QuizSummaryDTO` without questions for performance optimization. Use individual quiz endpoints to get full question details.
 
 ---
 
@@ -201,16 +203,23 @@ GET /api/quizzes?page=0&size=10&search=java&category=Programming
 GET /api/quizzes/{id}
 ```
 
-**Response:** Same as quiz object above.
+**Response:** Full `QuizDTO` with questions array
 
 ---
 
-### Get Quiz by Share Code
+### Get Quiz by Share Code (Public)
 ```
 GET /api/quizzes/share/{shareCode}
 ```
 
-**Response:** Same as quiz object above.
+**Alternative:**
+```
+GET /api/public/quizzes/share/{shareCode}
+```
+
+> 🌍 **No Authentication Required!** Users can preview quizzes without logging in. Login only required to submit.
+
+**Response:** Full quiz object with `questions` array.
 
 ---
 
@@ -291,20 +300,40 @@ POST /api/quizzes/{id}/submit
 }
 ```
 
+#### ⚠️ Attempt Constraints
+
+The following rules apply to quiz submissions:
+
+| Rule | Description | Error Code |
+|------|-------------|------------|
+| **Students Only** | Teachers and Admins cannot attempt quizzes | 403 |
+| **Single Attempt** | Each student can attempt a quiz only ONCE | 403 |
+| **Published Only** | Quiz must have status = `PUBLISHED` | 403 |
+| **Not Closed** | Cannot submit after quiz is `CLOSED` | 403 |
+| **Time Window** | Must be within start/end time (if set) | 403 |
+
+**Example 403 Errors:**
+```json
+{
+  "timestamp": "2026-02-09T10:30:00",
+  "status": 403,
+  "error": "Forbidden",
+  "message": "You have already attempted this quiz"
+}
+```
+
 ---
 
-## Teacher Quiz Management 🔒 (TEACHER only)
-
-### Get My Quizzes
+### Get My Quizzes 🔒 (Teacher/Admin)
 ```
 GET /api/quizzes/my
 ```
 
-**Response:** Array of quiz objects.
+**Response:** Array of all quizzes created by the authenticated teacher
 
 ---
 
-### Create Quiz
+### Create Quiz 🔒 (Teacher/Admin)
 ```
 POST /api/quizzes
 ```
@@ -315,7 +344,13 @@ POST /api/quizzes
   "title": "Java Advanced",
   "description": "Advanced Java concepts",
   "category": "Programming",
-  "totalMarks": 100,
+  "timeLimitMinutes": 30,
+  "negativeMarking": false,
+  "shuffleQuestions": true,
+  "shuffleOptions": true,
+  "passPercentage": 60,
+  "startTime": "2026-02-10T10:00:00",
+  "endTime": "2026-02-10T12:00:00",
   "questions": [
     {
       "text": "What is polymorphism?",
@@ -330,20 +365,35 @@ POST /api/quizzes
 }
 ```
 
-**Response (201 Created):** Full quiz object with generated ID.
+#### Quiz Settings (All Optional)
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `timeLimitMinutes` | Integer | null | Time limit in minutes (null = no limit) |
+| `negativeMarking` | Boolean | false | Penalty for wrong answers |
+| `shuffleQuestions` | Boolean | false | Randomize question order per student |
+| `shuffleOptions` | Boolean | false | Randomize answer options |
+| `passPercentage` | Integer | null | Min % to pass (null = no threshold) |
+| `startTime` | DateTime | null | When quiz becomes available |
+| `endTime` | DateTime | null | When quiz closes |
+| `status` | Enum | DRAFT | Initial status (DRAFT/PUBLISHED/CLOSED) |
+
+**Response (201 Created):** Full quiz object with generated ID and status `DRAFT`
 
 ---
 
-### Update Quiz
+### Update Quiz 🔒 (Teacher/Admin)
 ```
 PUT /api/quizzes/{id}
 ```
 
-**Request Body:** Same as create quiz.
+**Request Body:** Same structure as create quiz
+
+> ⚠️ Teachers can only update their own quizzes. Admins can update any quiz.
 
 ---
 
-### Delete Quiz
+### Delete Quiz 🔒 (Teacher/Admin)
 ```
 DELETE /api/quizzes/{id}
 ```
@@ -352,10 +402,12 @@ DELETE /api/quizzes/{id}
 
 ---
 
-### Publish Quiz
+### Publish Quiz 🔒 (Teacher/Admin)
 ```
 POST /api/quizzes/{id}/publish
 ```
+
+Changes quiz status from `DRAFT` to `PUBLISHED` and generates a share code.
 
 **Response:**
 ```json
@@ -369,25 +421,41 @@ POST /api/quizzes/{id}/publish
 
 ---
 
-### Close Quiz
+### Close Quiz 🔒 (Teacher/Admin)
 ```
 POST /api/quizzes/{id}/close
 ```
 
-**Response:** Updated quiz object with `status: "CLOSED"`.
+Changes quiz status to `CLOSED`. No more submissions will be accepted.
+
+**Response:** Updated quiz object with `status: "CLOSED"`
 
 ---
 
-### Get Quiz Students/Attempts
+### Get Quiz Students/Attempts 🔒 (Teacher/Admin)
 ```
-GET /api/quizzes/{id}/students
+GET /api/quizzes/{id}/students?sort=score_desc
 ```
+
+**Query Parameters:**
+
+| Parameter | Values | Default | Description |
+|-----------|--------|---------|-------------|
+| `sort` | `score_desc`, `score_asc`, `time_asc`, `attemptedAt_desc` | `score_desc` | Sort order |
+
+**Sort Options:**
+- `score_desc` - Highest scores first (leaderboard style)
+- `score_asc` - Lowest scores first (students needing help)
+- `time_asc` - Fastest completions first
+- `attemptedAt_desc` - Most recent attempts first
 
 **Response:** Array of quiz attempt objects with user info.
 
 ---
 
 ## Profile 🔒
+
+All profile endpoints require authentication.
 
 ### Get Profile
 ```
@@ -416,11 +484,13 @@ PUT /api/profile
 **Request Body:**
 ```json
 {
-  "name": "John Smith",
-  "email": "john.smith@example.com",
+  "name": "John Updated",
+  "email": "johnupdated@example.com",
   "phone": 9876543210
 }
 ```
+
+**Response:** Updated user object
 
 ---
 
@@ -433,7 +503,7 @@ POST /api/profile/change-password
 ```json
 {
   "currentPassword": "OldPassword@123",
-  "newPassword": "NewPassword@456"
+  "newPassword": "NewPassword@123"
 }
 ```
 
@@ -446,21 +516,33 @@ POST /api/profile/change-password
 
 ---
 
-### Get My Quiz Attempts
+### Get My Attempts
 ```
 GET /api/profile/attempts
 ```
 
-**Paginated:**
+**Response:** Array of all quiz attempts by the authenticated user
+
+---
+
+### Get My Attempts (Paginated)
 ```
 GET /api/profile/attempts/paginated?page=0&size=10
 ```
 
+**Query Parameters:**
+| Parameter | Type | Default |
+|-----------|------|---------|
+| `page` | Integer | 0 |
+| `size` | Integer | 10 |
+
+**Response:** Paginated quiz attempts
+
 ---
 
-## Dashboard (Teacher) 🔒
+## Dashboard (Teacher/Admin)
 
-### Get Dashboard Stats
+### Get Dashboard Stats 🔒
 ```
 GET /api/dashboard/stats
 ```
@@ -468,78 +550,88 @@ GET /api/dashboard/stats
 **Response:**
 ```json
 {
-  "totalQuizzes": 15,
-  "publishedQuizzes": 10,
-  "draftQuizzes": 3,
-  "closedQuizzes": 2,
+  "totalQuizzes": 10,
+  "totalPublished": 7,
+  "totalDrafts": 3,
   "totalAttempts": 150,
-  "averageScore": 75.5
+  "averageScore": 78.5,
+  "totalStudents": 25
 }
 ```
 
 ---
 
-### Get Quizzes with Statistics
+### Get My Quizzes with Stats 🔒
 ```
 GET /api/dashboard/quizzes?page=0&size=10
+```
+
+**Response:** Paginated quizzes with attempt statistics
+
+---
+
+### Get Quiz Statistics 🔒
+```
+GET /api/dashboard/quizzes/{id}/stats
 ```
 
 **Response:**
 ```json
 {
-  "content": [
-    {
-      "id": 1,
-      "title": "Java Basics",
-      "description": "Introduction",
-      "category": "Programming",
-      "status": "PUBLISHED",
-      "shareCode": "ABC12345",
-      "questionCount": 10,
-      "totalMarks": 50,
-      "attemptCount": 25,
-      "averageScore": 72.5
-    }
-  ],
-  "totalPages": 2,
-  "totalElements": 15
+  "quizId": 1,
+  "quizTitle": "Java Basics",
+  "totalAttempts": 30,
+  "averageScore": 75.5,
+  "highestScore": 100,
+  "lowestScore": 45,
+  "averageTimeTaken": 450,
+  "passRate": 80.0
 }
 ```
 
 ---
 
-### Get Single Quiz Stats
-```
-GET /api/dashboard/quizzes/{id}/stats
-```
-
----
-
-### Get Recent Attempts
+### Get Recent Attempts 🔒
 ```
 GET /api/dashboard/recent-attempts?limit=10
 ```
 
+**Response:** Most recent quiz attempts across all teacher's quizzes
+
 ---
 
-## Admin 🔒 (ADMIN only)
+## Admin
 
-### Get All Users
+All admin endpoints require `ADMIN` role.
+
+### User Management
+
+#### Get All Users 🔒
 ```
 GET /api/admin/users?page=0&size=20
 ```
 
-### Get Users by Role
+**Response:** Paginated users with admin details
+
+---
+
+#### Get Users by Role 🔒
 ```
-GET /api/admin/users/role/{ADMIN|TEACHER|STUDENT}
+GET /api/admin/users/role/{role}?page=0&size=20
 ```
 
-### Get User by ID
+**Roles:** `STUDENT`, `TEACHER`, `ADMIN`
+
+---
+
+#### Get User by ID 🔒
 ```
 GET /api/admin/users/{id}
 ```
 
-### Update User Role
+---
+
+#### Update User Role 🔒
 ```
 PUT /api/admin/users/{id}/role
 ```
@@ -551,22 +643,38 @@ PUT /api/admin/users/{id}/role
 }
 ```
 
-### Delete User
+---
+
+#### Delete User 🔒
 ```
 DELETE /api/admin/users/{id}
 ```
 
-### Get All Quizzes (Admin)
+**Response:** 204 No Content
+
+---
+
+### Quiz Management
+
+#### Get All Quizzes 🔒
 ```
 GET /api/admin/quizzes?page=0&size=20
 ```
 
-### Delete Quiz (Admin)
+**Response:** Paginated all quizzes (all users, all statuses)
+
+---
+
+#### Delete Quiz 🔒
 ```
 DELETE /api/admin/quizzes/{id}
 ```
 
-### Get System Stats
+---
+
+### System Statistics
+
+#### Get System Stats 🔒
 ```
 GET /api/admin/stats
 ```
@@ -575,52 +683,144 @@ GET /api/admin/stats
 ```json
 {
   "totalUsers": 100,
+  "totalStudents": 80,
+  "totalTeachers": 18,
   "totalAdmins": 2,
-  "totalTeachers": 15,
-  "totalStudents": 83,
   "totalQuizzes": 50,
-  "publishedQuizzes": 40,
-  "draftQuizzes": 5,
-  "closedQuizzes": 5,
-  "totalAttempts": 500
+  "totalDrafts": 10,
+  "totalPublished": 35,
+  "totalClosed": 5,
+  "totalAttempts": 500,
+  "averageScore": 75.5
 }
 ```
 
-### Get All Attempts
+---
+
+### Attempt Management
+
+#### Get All Attempts 🔒
 ```
 GET /api/admin/attempts?page=0&size=20
 ```
 
-### Get Attempt by ID
+**Response:** Paginated all quiz attempts system-wide
+
+---
+
+#### Get Attempt by ID 🔒
 ```
 GET /api/admin/attempts/{id}
+```
+
+**Response:** Detailed attempt with answers
+
+---
+
+## Health Check
+
+### Basic Health Check
+```
+GET /api/health
+```
+
+**Response:**
+```json
+{
+  "status": "UP",
+  "timestamp": "2026-02-09T10:30:00",
+  "service": "Java Quiz Server"
+}
+```
+
+---
+
+### Detailed Health Check
+```
+GET /api/health/detailed
+```
+
+**Response:**
+```json
+{
+  "status": "UP",
+  "timestamp": "2026-02-09T10:30:00",
+  "components": {
+    "database": "UP",
+    "authentication": "UP",
+    "quizService": "UP"
+  },
+  "info": {
+    "version": "1.0.0",
+    "environment": "development"
+  }
+}
 ```
 
 ---
 
 ## Data Models
 
-### User Roles
-```typescript
-type Role = "ADMIN" | "TEACHER" | "STUDENT";
+### QuizStatus Enum
+- `DRAFT` - Quiz is being created/edited
+- `PUBLISHED` - Quiz is live and accepting submissions
+- `CLOSED` - Quiz is closed, no more submissions
+
+### Role Enum
+- `STUDENT` - Can attempt quizzes
+- `TEACHER` - Can create and manage quizzes
+- `ADMIN` - Full system access
+
+### QuizSummaryDTO (List Endpoints)
+Lightweight DTO returned for quiz lists (no questions):
+```json
+{
+  "id": 1,
+  "title": "Java Basics",
+  "description": "Test your Java knowledge",
+  "category": "Programming",
+  "status": "PUBLISHED",
+  "creatorUsername": "teacher1",
+  "questionCount": 10,
+  "totalMarks": 50,
+  "shareCode": "ABC12345"
+}
 ```
 
-### Quiz Status
-```typescript
-type QuizStatus = "DRAFT" | "PUBLISHED" | "CLOSED";
-```
-
-### Answer Options
-```typescript
-type AnswerOption = "A" | "B" | "C" | "D";
+### QuizDTO (Detail Endpoints)
+Full DTO with questions array:
+```json
+{
+  "id": 1,
+  "title": "Java Basics",
+  "category": "Programming",
+  "status": "PUBLISHED",
+  "shareCode": "ABC12345",
+  "timeLimitMinutes": 30,
+  "negativeMarking": false,
+  "shuffleQuestions": true,
+  "shuffleOptions": true,
+  "passPercentage": 60,
+  "questions": [
+    {
+      "id": 1,
+      "text": "What is Java?",
+      "optionA": "Language",
+      "optionB": "Framework",
+      "optionC": "Database",
+      "optionD": "OS",
+      "correctAnswer": "A",
+      "marks": 5
+    }
+  ]
+}
 ```
 
 ---
 
 ## Error Handling
 
-All errors follow this format:
-
+### Standard Error Response
 ```json
 {
   "timestamp": "2026-02-09T10:30:00",
@@ -631,56 +831,60 @@ All errors follow this format:
 }
 ```
 
-### Common HTTP Status Codes
+### HTTP Status Codes
 
-| Code | Meaning |
-|------|---------|
-| 200 | Success |
-| 201 | Created |
-| 204 | No Content (successful delete) |
-| 400 | Bad Request (validation error) |
-| 401 | Unauthorized (no/invalid token) |
-| 403 | Forbidden (insufficient permissions) |
-| 404 | Not Found |
-| 409 | Conflict (duplicate resource) |
-| 429 | Too Many Requests (rate limited) |
-| 500 | Internal Server Error |
+| Code | Meaning | Common Scenarios |
+|------|---------|------------------|
+| 200 | OK | Successful GET, PUT requests |
+| 201 | Created | Successful POST (create) |
+| 204 | No Content | Successful DELETE |
+| 400 | Bad Request | Validation errors, duplicate username/email |
+| 401 | Unauthorized | Invalid/missing JWT token |
+| 403 | Forbidden | Insufficient permissions, quiz constraints |
+| 404 | Not Found | Resource doesn't exist |
+| 423 | Locked | Account locked (too many failed logins) |
+| 500 | Server Error | Unexpected server errors |
 
----
+### Common Error Scenarios
 
-## Using the Token in Requests
-
-After login/register, store the JWT token and include it in all authenticated requests:
-
-```javascript
-// JavaScript/TypeScript example
-const response = await fetch('/api/profile', {
-  method: 'GET',
-  headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  }
-});
+**401 Unauthorized:**
+```json
+{
+  "status": 401,
+  "error": "Unauthorized",
+  "message": "Invalid username or password"
+}
 ```
 
-```javascript
-// Axios example
-axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+**403 Forbidden:**
+```json
+{
+  "status": 403,
+  "error": "Forbidden",
+  "message": "You have already attempted this quiz"
+}
+```
+
+**423 Locked (Account Lockout):**
+```json
+{
+  "status": 423,
+  "error": "Locked",
+  "message": "Account locked due to too many failed login attempts. Try again in 25 minutes."
+}
 ```
 
 ---
 
-## CORS
+## Notes
 
-The API allows requests from:
-- `http://localhost:3000`
-- `http://127.0.0.1:3000`
-
-For production, configure `CORS_ALLOWED_ORIGINS` environment variable.
+- **Authentication:** Most endpoints require JWT token except `/api/auth/**`, `/api/health/**`, `/api/public/**`, and `GET /api/quizzes/share/{shareCode}`
+- **Pagination:** Default page size is 10-20 depending on endpoint
+- **Quiz Visibility:** Students only see `PUBLISHED` quizzes within time window
+- **Performance:** Quiz list endpoints use lightweight DTOs without questions
+- **Security:** Rate limiting on auth endpoints, account lockout after 5 failed login attempts
 
 ---
 
-## Rate Limiting
-
-Authentication endpoints (`/api/auth/*`) are rate-limited.
-After 5 failed login attempts, account is temporarily locked.
+**Version:** 1.0.0  
+**Last Updated:** February 10, 2026

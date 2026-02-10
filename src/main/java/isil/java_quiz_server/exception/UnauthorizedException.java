@@ -1,10 +1,11 @@
 package isil.java_quiz_server.exception;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
-@ResponseStatus(HttpStatus.UNAUTHORIZED)
-public class UnauthorizedException extends RuntimeException {
+/**
+ * Exception thrown when authentication fails.
+ */
+public class UnauthorizedException extends BaseAppException {
 
     public UnauthorizedException(String message) {
         super(message);
@@ -12,5 +13,15 @@ public class UnauthorizedException extends RuntimeException {
 
     public UnauthorizedException(String message, Throwable cause) {
         super(message, cause);
+    }
+
+    @Override
+    public HttpStatus getStatus() {
+        return HttpStatus.UNAUTHORIZED;
+    }
+
+    @Override
+    public String getErrorCode() {
+        return "UNAUTHORIZED";
     }
 }
