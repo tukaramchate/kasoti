@@ -56,12 +56,26 @@ public class QuizService {
      * Convert Quiz entity to QuizDTO (with questions, hides correct answers).
      */
     private QuizDTO convertToDTO(Quiz quiz) {
-        List<QuestionDTO> questionDTOs = quiz.getQuestions().stream()
-                .map(q -> QuestionDTO.builder()
-                        .id(q.getId())
-                        .text(q.getText())
-                        .options(q.getOptions())
-                        .build())
+        List<Question> questionList = new ArrayList<>(quiz.getQuestions());
+
+        // Shuffle questions if enabled
+        if (Boolean.TRUE.equals(quiz.getShuffleQuestions())) {
+            Collections.shuffle(questionList);
+        }
+
+        List<QuestionDTO> questionDTOs = questionList.stream()
+                .map(q -> {
+                    List<String> options = new ArrayList<>(q.getOptions());
+                    // Shuffle options if enabled
+                    if (Boolean.TRUE.equals(quiz.getShuffleOptions())) {
+                        Collections.shuffle(options);
+                    }
+                    return QuestionDTO.builder()
+                            .id(q.getId())
+                            .text(q.getText())
+                            .options(options)
+                            .build();
+                })
                 .toList();
 
         return QuizDTO.builder()
@@ -87,6 +101,9 @@ public class QuizService {
                 .questionCount(quiz.getQuestions() != null ? quiz.getQuestions().size() : 0)
                 .totalMarks(quiz.getTotalMarks())
                 .shareCode(quiz.getShareCode())
+                .difficulty(quiz.getDifficulty())
+                .tags(quiz.getTags())
+                .timeLimitMinutes(quiz.getTimeLimitMinutes())
                 .build();
     }
 
@@ -121,8 +138,8 @@ public class QuizService {
     public Page<QuizSummaryDTO> findQuizzes(String search, String category,
             String difficulty, String tags, int page, int size) {
         return quizRepository.findAvailableWithFilters(
-                        blankToNull(search), blankToNull(category),
-                        blankToNull(difficulty), blankToNull(tags),
+                        blankToEmpty(search), blankToEmpty(category),
+                        blankToEmpty(difficulty), blankToEmpty(tags),
                         LocalDateTime.now(), pageableDesc(page, size))
                 .map(this::convertToSummaryDTO);
     }
@@ -186,6 +203,12 @@ public class QuizService {
         quiz.setTimeLimitMinutes(quizDetails.getTimeLimitMinutes());
         quiz.setStartTime(quizDetails.getStartTime());
         quiz.setEndTime(quizDetails.getEndTime());
+        quiz.setNegativeMarking(quizDetails.getNegativeMarking());
+        quiz.setShuffleQuestions(quizDetails.getShuffleQuestions());
+        quiz.setShuffleOptions(quizDetails.getShuffleOptions());
+        quiz.setPassPercentage(quizDetails.getPassPercentage());
+        quiz.setDifficulty(quizDetails.getDifficulty());
+        quiz.setTags(quizDetails.getTags());
 
         // Update questions — clear and re-add to handle orphan removal correctly
         if (quizDetails.getQuestions() != null) {
@@ -278,11 +301,19 @@ public class QuizService {
         for (Question question : quiz.getQuestions()) {
             String submittedAnswer = submittedAnswers.get(question.getId());
             boolean isCorrect = submittedAnswer != null && submittedAnswer.equals(question.getCorrectOption());
-            int questionMarks = isCorrect ? (question.getMarks() != null ? question.getMarks() : 1) : 0;
+            int qMarks = question.getMarks() != null ? question.getMarks() : 1;
+            int questionMarks;
 
             if (isCorrect) {
                 correctCount++;
+                questionMarks = qMarks;
                 marksObtained += questionMarks;
+            } else if (Boolean.TRUE.equals(quiz.getNegativeMarking()) && submittedAnswer != null) {
+                // Deduct 25% of question marks for wrong answer (negative marking)
+                questionMarks = -(int) Math.ceil(qMarks * 0.25);
+                marksObtained += questionMarks;
+            } else {
+                questionMarks = 0;
             }
 
             answers.add(Answer.builder()
@@ -294,6 +325,9 @@ public class QuizService {
                     .build());
         }
 
+        // Ensure marks don't go below 0
+        marksObtained = Math.max(0, marksObtained);
+
         int score = totalMarks > 0 ? (int) ((marksObtained * 100.0) / totalMarks) : 0;
 
         attempt.setScore(score);
@@ -303,9 +337,25 @@ public class QuizService {
 
         quizAttemptRepository.save(attempt);
 
+        // Build per-question review data
+        List<AnswerDTO> answerDTOs = answers.stream().map(a -> AnswerDTO.builder()
+                .questionId(a.getQuestion().getId())
+                .questionText(a.getQuestion().getText())
+                .selectedOption(a.getSelectedOption())
+                .correctOption(a.getQuestion().getCorrectOption())
+                .isCorrect(a.getIsCorrect())
+                .marksObtained(a.getMarksObtained())
+                .maxMarks(a.getQuestion().getMarks() != null ? a.getQuestion().getMarks() : 1)
+                .build()).toList();
+
+        boolean passed = quiz.getPassPercentage() != null && quiz.getPassPercentage() > 0
+                ? score >= quiz.getPassPercentage()
+                : true;
+
         return new QuizResultResponse(
                 quiz.getId(), quiz.getTitle(), correctCount,
-                totalQuestions, request.getTimeTakenSeconds());
+                totalQuestions, request.getTimeTakenSeconds(),
+                marksObtained, totalMarks, passed, answerDTOs);
     }
 
     // ========== Quiz Attempt Queries ==========
@@ -374,6 +424,14 @@ public class QuizService {
      */
     private String blankToNull(String value) {
         return (value != null && !value.isBlank()) ? value : null;
+    }
+
+    /**
+     * Converts null/blank strings to empty string for JPQL parameters.
+     * Avoids PostgreSQL bytea type inference issues with null parameter binding.
+     */
+    private String blankToEmpty(String value) {
+        return (value != null && !value.isBlank()) ? value : "";
     }
 
     private String generateUniqueShareCode() {

@@ -61,16 +61,16 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
 
         /**
          * Single unified query that replaces 7 separate listing/search queries.
-         * All parameters are optional — when null they become no-ops via IS NULL checks.
-         * Covers: list all, filter by category, search by title, filter by difficulty/tags,
-         * and any combination thereof.
+         * All parameters are optional — when empty they become no-ops.
+         * Uses empty-string checks instead of IS NULL to avoid PostgreSQL bytea type
+         * inference issues with Hibernate 6 null parameter binding.
          */
         @EntityGraph(attributePaths = { "questions" })
         @Query("SELECT q FROM Quiz q WHERE q.status = 'PUBLISHED' AND " +
-                        "(:search IS NULL OR LOWER(q.title) LIKE LOWER(CONCAT('%', :search, '%'))) AND " +
-                        "(:category IS NULL OR q.category = :category) AND " +
-                        "(:difficulty IS NULL OR q.difficulty = :difficulty) AND " +
-                        "(:tags IS NULL OR q.tags LIKE CONCAT('%', :tags, '%')) AND " +
+                        "(:search = '' OR LOWER(q.title) LIKE LOWER(CONCAT('%', :search, '%'))) AND " +
+                        "(:category = '' OR q.category = :category) AND " +
+                        "(:difficulty = '' OR q.difficulty = :difficulty) AND " +
+                        "(:tags = '' OR q.tags LIKE CONCAT('%', :tags, '%')) AND " +
                         "(q.startTime IS NULL OR q.startTime <= :now) AND " +
                         "(q.endTime IS NULL OR q.endTime >= :now)")
         Page<Quiz> findAvailableWithFilters(

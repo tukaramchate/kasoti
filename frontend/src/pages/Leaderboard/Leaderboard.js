@@ -2,7 +2,6 @@ import React, { useEffect, useState, useContext, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { quizAPI } from "../../api";
 import { UserContext } from "../../context/UserContext";
-import "./Leaderboard.css";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import PageHeader from "../../components/PageHeader";
 import { FiAward } from "react-icons/fi";
@@ -54,41 +53,41 @@ const Leaderboard = () => {
 
     if (loading) {
         return (
-            <div className="leaderboard-container">
+            <div className="min-h-screen bg-[color:var(--bg-primary)] p-6 max-sm:p-4">
                 <LoadingSpinner />
             </div>
         );
     }
 
     return (
-        <div className="leaderboard-container">
-            <div className="leaderboard-content">
+        <div className="min-h-screen bg-[color:var(--bg-primary)] p-6 max-sm:p-4">
+            <div className="max-w-[760px] mx-auto">
                 <PageHeader title="Back to Home" />
 
-                <div className="leaderboard-card">
-                    <div className="leaderboard-header">
-                        <h1 className="leaderboard-title">
-                            <FiAward /> Leaderboard
+                <div className="bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-2xl overflow-hidden">
+                    <div className="p-7 text-center border-b border-[color:var(--border)] max-sm:p-5">
+                        <h1 className="flex items-center justify-center gap-2.5 text-2xl font-bold text-[color:var(--text-primary)] mb-1.5 max-sm:text-xl">
+                            <FiAward className="text-yellow-500" /> Leaderboard
                         </h1>
-                        <p className="leaderboard-subtitle">Top Champions for "{quizTitle}"</p>
+                        <p className="text-[color:var(--text-secondary)] text-sm">Top Champions for "{quizTitle}"</p>
                     </div>
 
-                    <div className="leaderboard-table-container">
+                    <div>
                         {leaderboard.length === 0 ? (
-                            <div className="empty-state">
-                                <FiAward className="empty-icon" />
-                                <h3>No champions yet!</h3>
-                                <p>Be the first to take this quiz and claim the top spot.</p>
+                            <div className="p-12 text-center max-sm:p-8">
+                                <FiAward className="text-[40px] text-[color:var(--text-muted)] mb-3" />
+                                <h3 className="text-base text-[color:var(--text-primary)] mb-1.5">No champions yet!</h3>
+                                <p className="text-[color:var(--text-secondary)] text-[13px]">Be the first to take this quiz and claim the top spot.</p>
                             </div>
                         ) : (
-                            <table className="leaderboard-table">
+                            <table className="w-full border-collapse">
                                 <thead>
                                     <tr>
-                                        <th>Rank</th>
-                                        <th>Player</th>
-                                        <th>Score</th>
-                                        <th>Time</th>
-                                        <th className="mobile-hide">Date</th>
+                                        <th className="text-left py-3 px-4 text-[11px] font-semibold text-[color:var(--text-muted)] uppercase tracking-wider border-b border-[color:var(--border)] bg-[color:var(--bg-primary)]">Rank</th>
+                                        <th className="text-left py-3 px-4 text-[11px] font-semibold text-[color:var(--text-muted)] uppercase tracking-wider border-b border-[color:var(--border)] bg-[color:var(--bg-primary)]">Player</th>
+                                        <th className="text-left py-3 px-4 text-[11px] font-semibold text-[color:var(--text-muted)] uppercase tracking-wider border-b border-[color:var(--border)] bg-[color:var(--bg-primary)]">Score</th>
+                                        <th className="text-left py-3 px-4 text-[11px] font-semibold text-[color:var(--text-muted)] uppercase tracking-wider border-b border-[color:var(--border)] bg-[color:var(--bg-primary)]">Time</th>
+                                        <th className="text-left py-3 px-4 text-[11px] font-semibold text-[color:var(--text-muted)] uppercase tracking-wider border-b border-[color:var(--border)] bg-[color:var(--bg-primary)] max-sm:hidden">Date</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -97,30 +96,30 @@ const Leaderboard = () => {
                                         const isCurrentUser = user?.user?.username === username;
 
                                         return (
-                                            <tr key={attempt.id || index} className={isCurrentUser ? "current-user-row" : ""}>
-                                                <td className="rank-cell">
+                                            <tr key={attempt.id || index} className={`transition-all hover:bg-[color:var(--bg-hover)] ${isCurrentUser ? '!bg-[color:var(--accent-light)]' : ''}`}>
+                                                <td className="py-3.5 px-4 border-b border-[color:var(--border-light)] text-sm w-14">
                                                     {index + 1 <= 3 ? (
-                                                        <div className={`rank-badge rank-${index + 1}`}>
+                                                        <div className={`w-[30px] h-[30px] rounded-full flex items-center justify-center font-bold text-[13px] text-white ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-500' : index === 1 ? 'bg-gradient-to-br from-gray-400 to-gray-500' : 'bg-gradient-to-br from-amber-600 to-amber-700'}`}>
                                                             {index + 1}
                                                         </div>
                                                     ) : (
-                                                        <span style={{ paddingLeft: '10px' }}>{index + 1}</span>
+                                                        <span className="pl-2.5">{index + 1}</span>
                                                     )}
                                                 </td>
-                                                <td>
-                                                    <div className="user-cell">
-                                                        <div className="user-avatar-small">
+                                                <td className="py-3.5 px-4 border-b border-[color:var(--border-light)] text-sm">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className="w-8 h-8 bg-[color:var(--accent)] rounded-full flex items-center justify-center text-white font-semibold text-[13px] shrink-0">
                                                             {username ? username.charAt(0).toUpperCase() : "?"}
                                                         </div>
                                                         <span>
                                                             {username || "Unknown"}
-                                                            {isCurrentUser && <span style={{ fontSize: '12px', color: 'var(--accent)', marginLeft: '6px' }}>(You)</span>}
+                                                            {isCurrentUser && <span className="text-xs text-[color:var(--accent)] ml-1.5">(You)</span>}
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className="score-cell">{attempt.score}%</td>
-                                                <td className="time-cell">{formatTime(attempt.timeTakenSeconds || attempt.timeTaken)}</td>
-                                                <td className="date-cell mobile-hide">{formatDate(attempt.attemptedAt || attempt.completedAt)}</td>
+                                                <td className="py-3.5 px-4 border-b border-[color:var(--border-light)] text-base font-bold text-[color:var(--accent)]">{attempt.score}%</td>
+                                                <td className="py-3.5 px-4 border-b border-[color:var(--border-light)] text-[13px] text-[color:var(--text-secondary)]">{formatTime(attempt.timeTakenSeconds || attempt.timeTaken)}</td>
+                                                <td className="py-3.5 px-4 border-b border-[color:var(--border-light)] text-xs text-[color:var(--text-muted)] max-sm:hidden">{formatDate(attempt.attemptedAt || attempt.completedAt)}</td>
                                             </tr>
                                         );
                                     })}

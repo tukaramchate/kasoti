@@ -1,26 +1,38 @@
-import React, { useState, useEffect, useContext, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { quizAPI } from "../../api";
-import { UserContext } from "../../context/UserContext";
+import { useAuth } from "../../context/UserContext";
+import { useTheme } from "../../context/ThemeContext";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import "./Home.css";
-import { FiSearch, FiMoon, FiSun, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiSearch, FiMoon, FiSun, FiChevronLeft, FiChevronRight, FiFilter } from "react-icons/fi";
 
 // Components
 import QuizCard from "../../components/QuizCard";
 import StatsCard from "../../components/StatsCard";
 import QuizSkeleton from "../../components/QuizSkeleton";
 
+/** Debounce hook — returns debounced value after `delay` ms of inactivity */
+function useDebounce(value, delay = 400) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return debounced;
+}
+
 const Home = () => {
-  const { user, setUser } = useContext(UserContext);
+  const { user, logout } = useAuth();
+  const { darkMode, toggleTheme } = useTheme();
   const [quizzes, setQuizzes] = useState([]);
   const [myQuizzes, setMyQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [myQuizzesLoading, setMyQuizzesLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedDifficulty, setSelectedDifficulty] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery);
   const [categories, setCategories] = useState(['All']);
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
   const navigate = useNavigate();
 
   // Pagination state
@@ -32,12 +44,6 @@ const Home = () => {
   const currentUser = user?.user;
   const isTeacher = currentUser?.role === 'TEACHER' || currentUser?.is_teacher;
   const isAdmin = currentUser?.role === 'ADMIN';
-
-  // Apply dark mode to document
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
-    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
-  }, [darkMode]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -71,7 +77,7 @@ const Home = () => {
   const fetchQuizzes = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await quizAPI.getAllQuizzes(page, pageSize, searchQuery, selectedCategory);
+      const response = await quizAPI.getAllQuizzes(page, pageSize, debouncedSearch, selectedCategory, selectedDifficulty);
 
       // Handle paginated response
       if (response.data.content) {
@@ -90,7 +96,7 @@ const Home = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, searchQuery, selectedCategory]);
+  }, [page, debouncedSearch, selectedCategory, selectedDifficulty]);
 
   useEffect(() => {
     fetchQuizzes();
@@ -99,11 +105,10 @@ const Home = () => {
   // Reset to first page when search or category changes
   useEffect(() => {
     setPage(0);
-  }, [searchQuery, selectedCategory]);
+  }, [debouncedSearch, selectedCategory, selectedDifficulty]);
 
   const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem("user");
+    logout();
     toast.success("Logged out successfully");
     navigate("/");
   };
@@ -128,95 +133,108 @@ const Home = () => {
   const totalQuestions = quizzes.reduce((acc, quiz) => acc + (quiz.questionCount || quiz.questions?.length || 0), 0);
 
   return (
-    <div className="home-container">
+    <div className="min-h-screen bg-[color:var(--bg-primary)]">
       {/* Header */}
-      <header className="home-header">
-        <div className="home-logo">
-          <img src="/assets/Kasoti logo.png" alt="Kasoti" className="home-logo-img" />
+      <header className="flex justify-between items-center px-6 py-3 bg-[color:var(--bg-card)] border-b border-[color:var(--border)] sticky top-0 z-[100]">
+        <div className="flex items-center">
+          <img src="/assets/kasoti-logo.png" alt="Kasoti" className="h-9 rounded object-contain" />
         </div>
 
-        <div className="user-section">
-          <button className="theme-toggle" onClick={() => setDarkMode(!darkMode)} title="Toggle theme">
+        <div className="flex items-center gap-2">
+          <button
+            className="w-9 h-9 bg-transparent border border-[color:var(--border)] rounded cursor-pointer text-[color:var(--text-secondary)] text-base flex items-center justify-center transition-all duration-150 hover:bg-[color:var(--bg-hover)] hover:text-[color:var(--text-primary)]"
+            onClick={toggleTheme}
+            title="Toggle theme"
+          >
             {darkMode ? <FiSun /> : <FiMoon />}
           </button>
           {(isTeacher || isAdmin) && (
-            <button className="nav-link-btn" onClick={() => navigate('/dashboard')}>
+            <button
+              className="hidden md:block py-2 px-3.5 bg-transparent border border-[color:var(--border)] text-[color:var(--text-secondary)] rounded font-medium text-[13px] cursor-pointer transition-all duration-150 hover:bg-[color:var(--accent-light)] hover:text-[color:var(--accent)] hover:border-[color:var(--accent)]"
+              onClick={() => navigate('/dashboard')}
+            >
               Dashboard
             </button>
           )}
           {isAdmin && (
-            <button className="nav-link-btn" onClick={() => navigate('/admin')}>
+            <button
+              className="hidden md:block py-2 px-3.5 bg-transparent border border-[color:var(--border)] text-[color:var(--text-secondary)] rounded font-medium text-[13px] cursor-pointer transition-all duration-150 hover:bg-[color:var(--accent-light)] hover:text-[color:var(--accent)] hover:border-[color:var(--accent)]"
+              onClick={() => navigate('/admin')}
+            >
               Admin
             </button>
           )}
           {currentUser && (
-            <div className="user-info" onClick={() => navigate('/profile')}>
-              <div className="user-avatar">
+            <div
+              className="flex items-center gap-2 py-1.5 px-3 rounded cursor-pointer transition-all duration-150 hover:bg-[color:var(--bg-hover)]"
+              onClick={() => navigate('/profile')}
+            >
+              <div className="w-[30px] h-[30px] bg-[color:var(--accent)] rounded-full flex items-center justify-center text-white font-semibold text-[13px]">
                 {currentUser.username?.charAt(0).toUpperCase()}
               </div>
-              <span className="user-name">{currentUser.username}</span>
-              {isTeacher && <span className="teacher-badge">Teacher</span>}
-              {isAdmin && <span className="teacher-badge">Admin</span>}
+              <span className="hidden md:inline text-[color:var(--text-primary)] font-medium text-[13px]">{currentUser.username}</span>
+              {isTeacher && <span className="bg-[color:var(--warning-light)] text-[color:var(--warning)] py-0.5 px-2 rounded-full text-[10px] font-semibold uppercase tracking-wide">Teacher</span>}
+              {isAdmin && <span className="bg-[color:var(--warning-light)] text-[color:var(--warning)] py-0.5 px-2 rounded-full text-[10px] font-semibold uppercase tracking-wide">Admin</span>}
             </div>
           )}
-          <button className="logout-btn" onClick={handleLogout}>
+          <button
+            className="py-2 px-4 bg-transparent border border-[color:var(--border)] text-[color:var(--text-secondary)] rounded font-medium text-[13px] cursor-pointer transition-all duration-150 hover:bg-[color:var(--danger-light)] hover:text-[color:var(--danger)] hover:border-[color:var(--danger)]"
+            onClick={handleLogout}
+          >
             Logout
           </button>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="hero-section">
-        <h1 className="hero-title">
-          Welcome to <span>Kasoti</span>
+      <section className="text-center pt-12 pb-4 px-6 md:pt-12 md:pb-4">
+        <h1 className="text-[28px] md:text-[28px] font-bold text-[color:var(--text-primary)] mb-1.5">
+          Welcome to <span className="text-[color:var(--accent)]">Kasoti</span>
         </h1>
-        <p className="hero-subtitle">
+        <p className="text-[color:var(--text-secondary)] text-[15px]">
           Test your knowledge with interactive quizzes
         </p>
       </section>
 
       {/* Stats Section */}
-      <section className="stats-section">
-        <StatsCard
-          value={totalElements}
-          label="Total Quizzes"
-        />
-        <StatsCard
-          value={totalQuestions}
-          label="Questions"
-        />
-        <StatsCard
-          value={isTeacher ? "Create" : "Learn"}
-          label={isTeacher ? "New Quizzes" : "& Explore"}
-        />
+      <section className="flex justify-center flex-wrap gap-3 p-6 md:p-6">
+        <StatsCard value={totalElements} label="Total Quizzes" />
+        <StatsCard value={totalQuestions} label="Questions" />
+        <StatsCard value={isTeacher ? "Create" : "Learn"} label={isTeacher ? "New Quizzes" : "& Explore"} />
       </section>
 
       {/* My Quizzes Section (Teachers only) */}
       {isTeacher && (
-        <section className="quiz-section my-quizzes-section">
-          <div className="section-header">
-            <h2 className="section-title">My Quizzes</h2>
-            <Link to="/addQuiz" className="create-quiz-btn">
+        <section className="px-4 md:px-6 pb-6 mb-2 border-b border-[color:var(--border)] max-w-[1280px] mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-5">
+            <h2 className="text-lg font-semibold text-[color:var(--text-primary)]">My Quizzes</h2>
+            <Link
+              to="/addQuiz"
+              className="inline-flex items-center gap-1.5 py-2 px-[18px] bg-[color:var(--accent)] text-white rounded font-medium text-[13px] no-underline transition-all duration-150 hover:bg-[color:var(--accent-hover)]"
+            >
               + Create Quiz
             </Link>
           </div>
           {myQuizzesLoading ? (
-            <div className="quiz-grid">
+            <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
               {[1, 2, 3].map((n) => (
                 <QuizSkeleton key={n} />
               ))}
             </div>
           ) : myQuizzes.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">📝</div>
-              <h3 className="empty-title">No quizzes created yet</h3>
-              <p className="empty-text">Create your first quiz to get started!</p>
-              <Link to="/addQuiz" className="create-quiz-btn">
+            <div className="text-center py-[60px] px-5 bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-lg">
+              <div className="text-[40px] mb-3">📝</div>
+              <h3 className="text-base text-[color:var(--text-primary)] mb-1.5">No quizzes created yet</h3>
+              <p className="text-[color:var(--text-secondary)] text-[13px] mb-5">Create your first quiz to get started!</p>
+              <Link
+                to="/addQuiz"
+                className="inline-flex items-center gap-1.5 py-2 px-[18px] bg-[color:var(--accent)] text-white rounded font-medium text-[13px] no-underline transition-all duration-150 hover:bg-[color:var(--accent-hover)]"
+              >
                 + Create First Quiz
               </Link>
             </div>
           ) : (
-            <div className="quiz-grid">
+            <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
               {myQuizzes.map((quiz) => (
                 <QuizCard
                   key={quiz.id}
@@ -233,15 +251,15 @@ const Home = () => {
       )}
 
       {/* Quiz Section */}
-      <section className="quiz-section">
-        <div className="section-header">
-          <h2 className="section-title">Available Quizzes</h2>
-          <div className="header-actions">
-            <div className="search-box">
-              <FiSearch className="search-icon" />
+      <section className="px-4 md:px-6 pb-10 max-w-[1280px] mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-5">
+          <h2 className="text-lg font-semibold text-[color:var(--text-primary)]">Available Quizzes</h2>
+          <div className="flex items-center gap-2.5 w-full md:w-auto">
+            <div className="flex items-center bg-[color:var(--bg-card)] border border-[color:var(--border)] py-2 px-3.5 rounded gap-2 transition-all duration-150 focus-within:border-[color:var(--accent)] focus-within:shadow-[0_0_0_3px_var(--accent-light)] flex-1 md:flex-none">
+              <FiSearch className="text-[color:var(--text-muted)] text-[15px] flex-shrink-0" />
               <input
                 type="text"
-                className="search-input"
+                className="bg-transparent border-none outline-none font-sans text-[13px] text-[color:var(--text-primary)] w-full md:w-[180px] placeholder:text-[color:var(--text-muted)]"
                 placeholder="Search quizzes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -251,11 +269,15 @@ const Home = () => {
         </div>
 
         {/* Category Filter */}
-        <div className="category-filter">
+        <div className="flex flex-wrap gap-1.5 mb-3">
           {categories.map((category) => (
             <button
               key={category}
-              className={`category-btn ${selectedCategory === category ? 'active' : ''}`}
+              className={`py-1.5 px-3.5 bg-transparent border rounded-full font-sans text-xs font-medium cursor-pointer transition-all duration-150 ${
+                selectedCategory === category
+                  ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
+                  : 'border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]'
+              }`}
               onClick={() => setSelectedCategory(category)}
             >
               {category}
@@ -263,21 +285,40 @@ const Home = () => {
           ))}
         </div>
 
+        {/* Difficulty Filter */}
+        <div className="flex items-center gap-2 mb-5">
+          <FiFilter className="text-[color:var(--text-muted)] text-sm" />
+          <span className="text-xs text-[color:var(--text-muted)]">Difficulty:</span>
+          {['All', 'EASY', 'MEDIUM', 'HARD'].map((d) => (
+            <button
+              key={d}
+              className={`py-1 px-3 border rounded-full font-sans text-[11px] font-medium cursor-pointer transition-all duration-150 ${
+                selectedDifficulty === d
+                  ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
+                  : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]'
+              }`}
+              onClick={() => setSelectedDifficulty(d)}
+            >
+              {d === 'All' ? 'All' : d.charAt(0) + d.slice(1).toLowerCase()}
+            </button>
+          ))}
+        </div>
+
         {loading ? (
-          <div className="quiz-grid">
+          <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
             {[1, 2, 3, 4, 5, 6].map((n) => (
               <QuizSkeleton key={n} />
             ))}
           </div>
         ) : quizzes.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">📚</div>
-            <h3 className="empty-title">
+          <div className="text-center py-[60px] px-5 bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-lg">
+            <div className="text-[40px] mb-3">📚</div>
+            <h3 className="text-base text-[color:var(--text-primary)] mb-1.5">
               {searchQuery || selectedCategory !== 'All'
                 ? "No quizzes found"
                 : "No quizzes yet"}
             </h3>
-            <p className="empty-text">
+            <p className="text-[color:var(--text-secondary)] text-[13px] mb-5">
               {searchQuery || selectedCategory !== 'All'
                 ? "Try adjusting your search or filter."
                 : "Check back later for new quizzes."}
@@ -285,7 +326,7 @@ const Home = () => {
           </div>
         ) : (
           <>
-            <div className="quiz-grid">
+            <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
               {quizzes.map((quiz) => (
                 <QuizCard
                   key={quiz.id}
@@ -300,19 +341,19 @@ const Home = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="pagination">
+              <div className="flex justify-center items-center gap-1.5 mt-7">
                 <button
-                  className="pagination-btn"
+                  className="flex items-center gap-1 py-2 px-3.5 bg-[color:var(--bg-card)] border border-[color:var(--border)] text-[color:var(--text-secondary)] rounded font-sans text-[13px] cursor-pointer transition-all duration-150 hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[color:var(--border)] disabled:hover:text-[color:var(--text-secondary)]"
                   onClick={() => setPage(p => Math.max(0, p - 1))}
                   disabled={page === 0}
                 >
                   <FiChevronLeft /> Prev
                 </button>
-                <span className="pagination-info">
+                <span className="text-[color:var(--text-muted)] text-[13px] px-3">
                   Page {page + 1} of {totalPages}
                 </span>
                 <button
-                  className="pagination-btn"
+                  className="flex items-center gap-1 py-2 px-3.5 bg-[color:var(--bg-card)] border border-[color:var(--border)] text-[color:var(--text-secondary)] rounded font-sans text-[13px] cursor-pointer transition-all duration-150 hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[color:var(--border)] disabled:hover:text-[color:var(--text-secondary)]"
                   onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                   disabled={page >= totalPages - 1}
                 >

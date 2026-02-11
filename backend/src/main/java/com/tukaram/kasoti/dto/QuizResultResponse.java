@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Response DTO for quiz results.
@@ -17,13 +18,19 @@ public class QuizResultResponse {
     private Integer score;
     private Integer totalQuestions;
     private Integer correctAnswers;
+    private Integer marksObtained;
+    private Integer totalMarks;
+    private Boolean passed;
     private Double percentage;
     private Integer timeTakenSeconds;
     private LocalDateTime attemptedAt;
     private String message;
+    private List<AnswerDTO> answers;
 
     public QuizResultResponse(Long quizId, String quizTitle, Integer correctAnswers,
-            Integer totalQuestions, Integer timeTakenSeconds) {
+            Integer totalQuestions, Integer timeTakenSeconds,
+            Integer marksObtained, Integer totalMarks, Boolean passed,
+            List<AnswerDTO> answers) {
         this.quizId = quizId;
         this.quizTitle = quizTitle;
         this.correctAnswers = correctAnswers;
@@ -31,6 +38,10 @@ public class QuizResultResponse {
         this.score = (int) ((correctAnswers * 100.0) / totalQuestions);
         this.percentage = (correctAnswers * 100.0) / totalQuestions;
         this.timeTakenSeconds = timeTakenSeconds;
+        this.marksObtained = marksObtained;
+        this.totalMarks = totalMarks;
+        this.passed = passed;
+        this.answers = answers;
         this.attemptedAt = LocalDateTime.now();
         this.message = generateMessage();
     }

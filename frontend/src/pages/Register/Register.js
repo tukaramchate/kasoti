@@ -2,34 +2,32 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authAPI } from "../../api";
 import { toast } from "react-toastify";
-import "./Register.css";
+import PasswordInput from "../../components/PasswordInput";
 
 const Register = () => {
   const navigate = useNavigate();
-  const [name, setName] = useState("");
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState({
+    fullName: "",
+    username: "",
+    email: "",
+    phone: "",
+    password: "",
+  });
   const [role, setRole] = useState("STUDENT");
   const [loading, setLoading] = useState(false);
 
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
+    if (!formData.fullName || !formData.username || !formData.email || !formData.password) {
+      toast.error("Please fill all required fields");
+      return;
+    }
 
-    if (!name || name.length < 2) {
-      toast.error("Name must be at least 2 characters");
-      return;
-    }
-    if (!username || username.length < 3) {
-      toast.error("Username must be at least 3 characters");
-      return;
-    }
-    if (!email || !email.includes("@")) {
-      toast.error("Please enter a valid email");
-      return;
-    }
-    if (!password || password.length < 8) {
+    if (formData.password.length < 8) {
       toast.error("Password must be at least 8 characters");
       return;
     }
@@ -37,109 +35,126 @@ const Register = () => {
     setLoading(true);
     try {
       await authAPI.register({
-        name,
-        username,
-        email,
-        phone: phone ? parseInt(phone) : null,
-        password,
-        role,
+        fullName: formData.fullName,
+        username: formData.username,
+        email: formData.email,
+        phone: formData.phone || null,
+        password: formData.password,
+        role: role,
       });
-      toast.success("Account created! Please sign in.");
+      toast.success("Registration successful! Please sign in.");
       navigate("/login");
     } catch (error) {
-      if (error.response?.data?.errors) {
-        Object.values(error.response.data.errors).forEach((err) =>
-          toast.error(err)
-        );
-      } else if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
+      if (error.response) {
+        if (error.response.data?.errors) {
+          Object.values(error.response.data.errors).forEach((err) =>
+            toast.error(err)
+          );
+        } else {
+          toast.error(error.response.data?.message || "Registration failed");
+        }
       } else {
-        toast.error("Registration failed. Please try again.");
+        toast.error("Network error. Please check your connection.");
       }
     } finally {
       setLoading(false);
     }
   };
 
+  const inputStyles = "w-full py-[11px] px-[14px] font-sans text-sm text-[color:var(--text-primary)] bg-[color:var(--bg-input)] border border-[color:var(--border)] rounded outline-none transition-all duration-150 focus:border-[color:var(--accent)] focus:shadow-[0_0_0_3px_var(--accent-light)] placeholder:text-[color:var(--text-muted)]";
+  const buttonStyles = "w-full py-3 bg-[color:var(--accent)] text-white border-none rounded font-sans text-sm font-semibold cursor-pointer transition-all duration-150 mt-1 hover:bg-[color:var(--accent-hover)] disabled:opacity-60 disabled:cursor-not-allowed";
+
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <div className="auth-logo">
-          <img src="/assets/Kasoti logo.png" alt="Kasoti" className="auth-logo-img" />
+    <div className="min-h-screen flex items-center justify-center bg-[color:var(--bg-primary)] p-6">
+      <div className="w-full max-w-[420px] bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-xl p-10 shadow">
+        <div className="flex items-center justify-center mb-8">
+          <img src="/assets/kasoti-logo.png" alt="Kasoti" className="h-14 rounded object-contain" />
         </div>
 
-        <h1 className="auth-title">Create account</h1>
-        <p className="auth-subtitle">Get started with Kasoti</p>
+        <h1 className="text-[22px] font-bold text-[color:var(--text-primary)] mb-1">Create account</h1>
+        <p className="text-[color:var(--text-secondary)] text-sm mb-7">Fill in your details to get started</p>
 
-        <form className="auth-form" onSubmit={handleRegister}>
-          <div className="auth-field">
-            <label className="auth-label">Full Name</label>
+        <form className="flex flex-col gap-4" onSubmit={handleRegister}>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-medium text-[color:var(--text-primary)]">Full Name *</label>
             <input
               type="text"
-              className="auth-input"
-              placeholder="John Doe"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              name="fullName"
+              className={inputStyles}
+              placeholder="Enter your full name"
+              value={formData.fullName}
+              onChange={handleChange}
             />
           </div>
 
-          <div className="auth-field">
-            <label className="auth-label">Username</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-medium text-[color:var(--text-primary)]">Username *</label>
             <input
               type="text"
-              className="auth-input"
-              placeholder="johndoe"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              name="username"
+              className={inputStyles}
+              placeholder="Choose a username"
+              value={formData.username}
+              onChange={handleChange}
             />
           </div>
 
-          <div className="auth-field">
-            <label className="auth-label">Email</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-medium text-[color:var(--text-primary)]">Email *</label>
             <input
               type="email"
-              className="auth-input"
-              placeholder="john@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              name="email"
+              className={inputStyles}
+              placeholder="Enter your email"
+              value={formData.email}
+              onChange={handleChange}
             />
           </div>
 
-          <div className="auth-field">
-            <label className="auth-label">Phone (optional)</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-medium text-[color:var(--text-primary)]">Phone (optional)</label>
             <input
               type="tel"
-              className="auth-input"
-              placeholder="1234567890"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              name="phone"
+              className={inputStyles}
+              placeholder="Enter your phone number"
+              value={formData.phone}
+              onChange={handleChange}
             />
           </div>
 
-          <div className="auth-field">
-            <label className="auth-label">Password</label>
-            <input
-              type="password"
-              className="auth-input"
-              placeholder="Min 8 chars, uppercase, number, special"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-medium text-[color:var(--text-primary)]">Password *</label>
+            <PasswordInput
+              name="password"
+              className={inputStyles}
+              placeholder="Min 8 characters"
+              value={formData.password}
+              onChange={handleChange}
             />
           </div>
 
-          <div className="auth-field">
-            <label className="auth-label">I am a</label>
-            <div className="role-toggle">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-medium text-[color:var(--text-primary)]">I am a...</label>
+            <div className="flex gap-2">
               <button
                 type="button"
-                className={`role-option ${role === "STUDENT" ? "active" : ""}`}
+                className={`flex-1 py-2.5 border rounded font-medium text-sm transition-all duration-150 ${
+                  role === "STUDENT"
+                    ? "bg-[color:var(--accent)] text-white border-[color:var(--accent)]"
+                    : "bg-transparent text-[color:var(--text-secondary)] border-[color:var(--border)] hover:border-[color:var(--accent)]"
+                }`}
                 onClick={() => setRole("STUDENT")}
               >
                 Student
               </button>
               <button
                 type="button"
-                className={`role-option ${role === "TEACHER" ? "active" : ""}`}
+                className={`flex-1 py-2.5 border rounded font-medium text-sm transition-all duration-150 ${
+                  role === "TEACHER"
+                    ? "bg-[color:var(--accent)] text-white border-[color:var(--accent)]"
+                    : "bg-transparent text-[color:var(--text-secondary)] border-[color:var(--border)] hover:border-[color:var(--accent)]"
+                }`}
                 onClick={() => setRole("TEACHER")}
               >
                 Teacher
@@ -147,13 +162,13 @@ const Register = () => {
             </div>
           </div>
 
-          <button type="submit" className="auth-btn" disabled={loading}>
+          <button type="submit" className={buttonStyles} disabled={loading}>
             {loading ? "Creating account..." : "Create account"}
           </button>
         </form>
 
-        <div className="auth-footer">
-          Already have an account? <Link to="/login">Sign in</Link>
+        <div className="text-center mt-6 text-sm text-[color:var(--text-secondary)]">
+          Already have an account? <Link to="/login" className="font-medium text-[color:var(--accent)] hover:text-[color:var(--accent-hover)]">Sign in</Link>
         </div>
       </div>
     </div>

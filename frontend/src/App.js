@@ -1,71 +1,78 @@
-import React, { useContext } from "react";
+import React, { lazy, Suspense } from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
-  Navigate,
 } from "react-router-dom";
-import Landing from "./pages/Landing/Landing";
-import Login from "./pages/Login/Login";
-import Register from "./pages/Register/Register";
-import Home from "./pages/Home/Home";
-import QuizData from "./pages/QuizData/QuizData";
-import AddQuiz from "./pages/AddQuiz/AddQuiz";
-import EditQuiz from "./pages/EditQuiz/EditQuiz";
-import QuizStudents from "./pages/QuizStudents/QuizStudents";
-import Profile from "./pages/Profile/Profile";
-import Leaderboard from "./pages/Leaderboard/Leaderboard";
-import ShareQuiz from "./pages/ShareQuiz/ShareQuiz";
-import Dashboard from "./pages/Dashboard/Dashboard";
-import Admin from "./pages/Admin/Admin";
-import { UserContext } from "./context/UserContext";
+import { ProtectedRoute, GuestRoute, RoleGuard } from "./components/RouteGuards";
+import LoadingSpinner from "./components/LoadingSpinner";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const App = () => {
-  const { user } = useContext(UserContext);
+// Lazy-loaded pages
+const Landing = lazy(() => import("./pages/Landing/Landing"));
+const Login = lazy(() => import("./pages/Login/Login"));
+const Register = lazy(() => import("./pages/Register/Register"));
+const Home = lazy(() => import("./pages/Home/Home"));
+const QuizData = lazy(() => import("./pages/QuizData/QuizData"));
+const AddQuiz = lazy(() => import("./pages/AddQuiz/AddQuiz"));
+const EditQuiz = lazy(() => import("./pages/EditQuiz/EditQuiz"));
+const QuizStudents = lazy(() => import("./pages/QuizStudents/QuizStudents"));
+const Profile = lazy(() => import("./pages/Profile/Profile"));
+const Leaderboard = lazy(() => import("./pages/Leaderboard/Leaderboard"));
+const ShareQuiz = lazy(() => import("./pages/ShareQuiz/ShareQuiz"));
+const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard"));
+const Admin = lazy(() => import("./pages/Admin/Admin"));
+const NotFound = lazy(() => import("./pages/NotFound/NotFound"));
 
+const SuspenseFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-[color:var(--bg-primary)]">
+    <LoadingSpinner />
+  </div>
+);
+
+const App = () => {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/share/:shareCode" element={<ShareQuiz />} />
-        <Route path="/home" element={user ? <Home /> : <Navigate to="/login" />} />
-        <Route
-          path="/quiz/:id"
-          element={user ? <QuizData /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/addQuiz"
-          element={user ? <AddQuiz /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/editQuiz/:id"
-          element={user ? <EditQuiz /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/quiz/:id/students"
-          element={user ? <QuizStudents /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/profile"
-          element={user ? <Profile /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/leaderboard/:id"
-          element={user ? <Leaderboard /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/dashboard"
-          element={user ? <Dashboard /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/admin"
-          element={user ? <Admin /> : <Navigate to="/login" />}
-        />
-      </Routes>
+      <Suspense fallback={<SuspenseFallback />}>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<Landing />} />
+          <Route path="/share/:shareCode" element={<ShareQuiz />} />
+
+          {/* Guest-only routes (redirect to /home if logged in) */}
+          <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+          <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+
+          {/* Protected routes (require auth) */}
+          <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+          <Route path="/quiz/:id" element={<ProtectedRoute><QuizData /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/leaderboard/:id" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+
+          {/* Teacher + Admin routes */}
+          <Route path="/addQuiz" element={
+            <ProtectedRoute><RoleGuard roles={["TEACHER", "ADMIN"]}><AddQuiz /></RoleGuard></ProtectedRoute>
+          } />
+          <Route path="/editQuiz/:id" element={
+            <ProtectedRoute><RoleGuard roles={["TEACHER", "ADMIN"]}><EditQuiz /></RoleGuard></ProtectedRoute>
+          } />
+          <Route path="/quiz/:id/students" element={
+            <ProtectedRoute><RoleGuard roles={["TEACHER", "ADMIN"]}><QuizStudents /></RoleGuard></ProtectedRoute>
+          } />
+          <Route path="/dashboard" element={
+            <ProtectedRoute><RoleGuard roles={["TEACHER", "ADMIN"]}><Dashboard /></RoleGuard></ProtectedRoute>
+          } />
+
+          {/* Admin-only routes */}
+          <Route path="/admin" element={
+            <ProtectedRoute><RoleGuard roles={["ADMIN"]}><Admin /></RoleGuard></ProtectedRoute>
+          } />
+
+          {/* 404 catch-all */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
       <ToastContainer />
     </Router>
   );

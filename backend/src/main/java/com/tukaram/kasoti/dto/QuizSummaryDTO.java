@@ -24,4 +24,7 @@ public class QuizSummaryDTO {
     private int questionCount;
     private int totalMarks;
     private String shareCode;
+    private String difficulty;
+    private String tags;
+    private Integer timeLimitMinutes;
 }

@@ -1,23 +1,21 @@
-import React, { useContext, useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authAPI } from "../../api";
 import { toast } from "react-toastify";
-import { UserContext } from "../../context/UserContext";
-import "./Login.css";
+import { useAuth } from "../../context/UserContext";
+import PasswordInput from "../../components/PasswordInput";
 
 const Login = () => {
-  const { setUser } = useContext(UserContext);
+  const { setUser } = useAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Forgot password state
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
 
-  // Reset password state
   const [showReset, setShowReset] = useState(false);
   const [resetToken, setResetToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -105,121 +103,120 @@ const Login = () => {
     }
   };
 
+  const inputStyles = "w-full py-[11px] px-[14px] font-sans text-sm text-[color:var(--text-primary)] bg-[color:var(--bg-input)] border border-[color:var(--border)] rounded outline-none transition-all duration-150 focus:border-[color:var(--accent)] focus:shadow-[0_0_0_3px_var(--accent-light)] placeholder:text-[color:var(--text-muted)]";
+  const buttonStyles = "w-full py-3 bg-[color:var(--accent)] text-white border-none rounded font-sans text-sm font-semibold cursor-pointer transition-all duration-150 mt-1 hover:bg-[color:var(--accent-hover)] disabled:opacity-60 disabled:cursor-not-allowed";
+  const linkBtnStyles = "bg-none border-none text-[color:var(--accent)] font-sans text-[13px] font-medium cursor-pointer p-0 transition-all duration-150 hover:text-[color:var(--accent-hover)] hover:underline";
+
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <div className="auth-logo">
-          <img src="/assets/Kasoti logo.png" alt="Kasoti" className="auth-logo-img" />
+    <div className="min-h-screen flex items-center justify-center bg-[color:var(--bg-primary)] p-6">
+      <div className="w-full max-w-[420px] bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-xl p-10 shadow">
+        <div className="flex items-center justify-center mb-8">
+          <img src="/assets/kasoti-logo.png" alt="Kasoti" className="h-14 rounded object-contain" />
         </div>
 
-        {/* Forgot Password Form */}
         {showForgot && (
           <>
-            <h1 className="auth-title">Forgot password?</h1>
-            <p className="auth-subtitle">Enter your email to receive a reset link</p>
-            <form className="auth-form" onSubmit={handleForgotPassword}>
-              <div className="auth-field">
-                <label className="auth-label">Email</label>
+            <h1 className="text-[22px] font-bold text-[color:var(--text-primary)] mb-1">Forgot password?</h1>
+            <p className="text-[color:var(--text-secondary)] text-sm mb-7">Enter your email to receive a reset link</p>
+            <form className="flex flex-col gap-4" onSubmit={handleForgotPassword}>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-[color:var(--text-primary)]">Email</label>
                 <input
                   type="email"
-                  className="auth-input"
+                  className={inputStyles}
                   placeholder="Enter your email"
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
                 />
               </div>
-              <button type="submit" className="auth-btn" disabled={forgotLoading}>
+              <button type="submit" className={buttonStyles} disabled={forgotLoading}>
                 {forgotLoading ? "Sending..." : "Send Reset Link"}
               </button>
             </form>
-            <div className="auth-footer">
-              <button className="auth-link-btn" onClick={() => setShowForgot(false)}>
+            <div className="text-center mt-6 text-sm text-[color:var(--text-secondary)]">
+              <button className={linkBtnStyles} onClick={() => setShowForgot(false)}>
                 Back to sign in
               </button>
             </div>
           </>
         )}
 
-        {/* Reset Password Form */}
         {showReset && (
           <>
-            <h1 className="auth-title">Reset password</h1>
-            <p className="auth-subtitle">Enter the token from your email and a new password</p>
-            <form className="auth-form" onSubmit={handleResetPassword}>
-              <div className="auth-field">
-                <label className="auth-label">Reset Token</label>
+            <h1 className="text-[22px] font-bold text-[color:var(--text-primary)] mb-1">Reset password</h1>
+            <p className="text-[color:var(--text-secondary)] text-sm mb-7">Enter the token from your email and a new password</p>
+            <form className="flex flex-col gap-4" onSubmit={handleResetPassword}>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-[color:var(--text-primary)]">Reset Token</label>
                 <input
                   type="text"
-                  className="auth-input"
+                  className={inputStyles}
                   placeholder="Paste token from email"
                   value={resetToken}
                   onChange={(e) => setResetToken(e.target.value)}
                 />
               </div>
-              <div className="auth-field">
-                <label className="auth-label">New Password</label>
-                <input
-                  type="password"
-                  className="auth-input"
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-[color:var(--text-primary)]">New Password</label>
+                <PasswordInput
+                  className={inputStyles}
                   placeholder="Min 8 characters"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                 />
               </div>
-              <button type="submit" className="auth-btn" disabled={resetLoading}>
+              <button type="submit" className={buttonStyles} disabled={resetLoading}>
                 {resetLoading ? "Resetting..." : "Reset Password"}
               </button>
             </form>
-            <div className="auth-footer">
-              <button className="auth-link-btn" onClick={() => { setShowReset(false); setShowForgot(false); }}>
+            <div className="text-center mt-6 text-sm text-[color:var(--text-secondary)]">
+              <button className={linkBtnStyles} onClick={() => { setShowReset(false); setShowForgot(false); }}>
                 Back to sign in
               </button>
             </div>
           </>
         )}
 
-        {/* Login Form */}
         {!showForgot && !showReset && (
           <>
-            <h1 className="auth-title">Welcome back</h1>
-            <p className="auth-subtitle">Sign in to your account to continue</p>
+            <h1 className="text-[22px] font-bold text-[color:var(--text-primary)] mb-1">Welcome back</h1>
+            <p className="text-[color:var(--text-secondary)] text-sm mb-7">Sign in to your account to continue</p>
 
-            <form className="auth-form" onSubmit={handleLogin}>
-              <div className="auth-field">
-                <label className="auth-label">Username</label>
+            <form className="flex flex-col gap-4" onSubmit={handleLogin}>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-[color:var(--text-primary)]">Username</label>
                 <input
                   type="text"
-                  className="auth-input"
+                  className={inputStyles}
                   placeholder="Enter your username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                 />
               </div>
 
-              <div className="auth-field">
-                <label className="auth-label">Password</label>
-                <input
-                  type="password"
-                  className="auth-input"
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-[color:var(--text-primary)]">Password</label>
+                <PasswordInput
+                  className={inputStyles}
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
 
-              <div className="auth-forgot-link">
-                <button type="button" className="auth-link-btn" onClick={() => setShowForgot(true)}>
+              <div className="text-right -mt-2">
+                <button type="button" className={linkBtnStyles} onClick={() => setShowForgot(true)}>
                   Forgot password?
                 </button>
               </div>
 
-              <button type="submit" className="auth-btn" disabled={loading}>
+              <button type="submit" className={buttonStyles} disabled={loading}>
                 {loading ? "Signing in..." : "Sign in"}
               </button>
             </form>
 
-            <div className="auth-footer">
-              Don't have an account? <Link to="/register">Create one</Link>
+            <div className="text-center mt-6 text-sm text-[color:var(--text-secondary)]">
+              Don't have an account? <Link to="/register" className="font-medium text-[color:var(--accent)] hover:text-[color:var(--accent-hover)]">Create one</Link>
             </div>
           </>
         )}

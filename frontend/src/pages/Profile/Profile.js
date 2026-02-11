@@ -1,18 +1,22 @@
-import React, { useState, useEffect, useContext, useCallback } from "react";
-import { UserContext } from "../../context/UserContext";
+import React, { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../../context/UserContext";
 import { quizAPI, profileAPI } from "../../api";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import "./Profile.css";
 import PageHeader from "../../components/PageHeader";
 import LoadingSpinner from "../../components/LoadingSpinner";
-import { FiBookOpen, FiActivity, FiAward, FiTrendingUp, FiEdit2, FiLock, FiSave, FiX } from "react-icons/fi";
+import PasswordInput from "../../components/PasswordInput";
+import { FiBookOpen, FiActivity, FiAward, FiTrendingUp, FiEdit2, FiLock, FiSave, FiX, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
 const Profile = () => {
-    const { user, setUser } = useContext(UserContext);
+    const { user, setUser } = useAuth();
     const navigate = useNavigate();
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    // Pagination for student attempts
+    const [attemptPage, setAttemptPage] = useState(0);
+    const [attemptTotalPages, setAttemptTotalPages] = useState(0);
 
     // Edit profile state
     const [editing, setEditing] = useState(false);
@@ -46,8 +50,15 @@ const Profile = () => {
                 const response = await quizAPI.getMyQuizzes();
                 setData(response.data);
             } else {
-                const response = await profileAPI.getAttempts();
-                setData(response.data || []);
+                const response = await profileAPI.getAttemptsPaginated(attemptPage, 10);
+                const attemptData = response.data;
+                if (attemptData.content) {
+                    setData(attemptData.content);
+                    setAttemptTotalPages(attemptData.totalPages || 1);
+                } else {
+                    setData(attemptData || []);
+                    setAttemptTotalPages(1);
+                }
             }
         } catch (error) {
             console.error("Error fetching profile data:", error);
@@ -55,7 +66,7 @@ const Profile = () => {
             setLoading(false);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isTeacher]);
+    }, [isTeacher, attemptPage]);
 
     useEffect(() => {
         fetchProfileData();
@@ -87,7 +98,7 @@ const Profile = () => {
             const response = await profileAPI.updateProfile({
                 name: editName.trim(),
                 email: editEmail.trim(),
-                phone: editPhone ? parseInt(editPhone) : null,
+                phone: editPhone ? editPhone.trim() : null,
             });
 
             // Update context with new data
@@ -134,9 +145,11 @@ const Profile = () => {
         }
     };
 
+    const inputStyles = "w-full py-2.5 px-3 font-sans text-sm text-[color:var(--text-primary)] bg-[color:var(--bg-input)] border border-[color:var(--border)] rounded outline-none transition-all duration-150 focus:border-[color:var(--accent)] focus:shadow-[0_0_0_3px_var(--accent-light)]";
+
     if (loading) {
         return (
-            <div className="profile-container">
+            <div className="min-h-screen bg-[color:var(--bg-primary)] p-4 sm:p-6 max-w-[860px] mx-auto">
                 <LoadingSpinner />
             </div>
         );
@@ -157,74 +170,89 @@ const Profile = () => {
     }
 
     const getScoreClass = (score) => {
-        if (score >= 80) return 'high';
-        if (score >= 50) return 'medium';
-        return 'low';
+        if (score >= 80) return 'text-[color:var(--success)]';
+        if (score >= 50) return 'text-[color:var(--warning)]';
+        return 'text-[color:var(--danger)]';
     };
 
     return (
-        <div className="profile-container">
+        <div className="min-h-screen bg-[color:var(--bg-primary)] p-4 sm:p-6 max-w-[860px] mx-auto">
             <PageHeader title="My Profile" />
 
             {/* User Info Card */}
-            <div className="profile-header-card">
-                <div className="profile-avatar-large">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-xl p-6 sm:p-7 mb-5 text-center sm:text-left">
+                <div className="w-[72px] h-[72px] bg-[color:var(--accent)] rounded-full flex items-center justify-center text-white text-[28px] font-bold flex-shrink-0">
                     {currentUser?.username?.charAt(0).toUpperCase()}
                 </div>
-                <div className="profile-info">
+                <div className="flex-1">
                     {editing ? (
-                        <div className="profile-edit-form">
-                            <div className="profile-edit-row">
+                        <div className="flex flex-col gap-3">
+                            <div className="flex flex-col gap-2">
                                 <input
                                     type="text"
-                                    className="profile-edit-input"
+                                    className={inputStyles}
                                     placeholder="Full Name"
                                     value={editName}
                                     onChange={(e) => setEditName(e.target.value)}
                                 />
                                 <input
                                     type="email"
-                                    className="profile-edit-input"
+                                    className={inputStyles}
                                     placeholder="Email"
                                     value={editEmail}
                                     onChange={(e) => setEditEmail(e.target.value)}
                                 />
                                 <input
                                     type="tel"
-                                    className="profile-edit-input"
+                                    className={inputStyles}
                                     placeholder="Phone (optional)"
                                     value={editPhone}
                                     onChange={(e) => setEditPhone(e.target.value)}
                                 />
                             </div>
-                            <div className="profile-edit-actions">
-                                <button className="profile-save-btn" onClick={handleSaveProfile} disabled={saving}>
+                            <div className="flex gap-2 justify-center sm:justify-start">
+                                <button
+                                    className="flex items-center gap-1.5 py-2 px-4 bg-[color:var(--accent)] text-white border-none rounded font-sans text-[13px] font-medium cursor-pointer transition-all duration-150 hover:bg-[color:var(--accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
+                                    onClick={handleSaveProfile}
+                                    disabled={saving}
+                                >
                                     <FiSave /> {saving ? "Saving..." : "Save"}
                                 </button>
-                                <button className="profile-cancel-btn" onClick={cancelEditing}>
+                                <button
+                                    className="flex items-center gap-1.5 py-2 px-4 bg-[color:var(--bg-hover)] text-[color:var(--text-secondary)] border border-[color:var(--border)] rounded font-sans text-[13px] font-medium cursor-pointer transition-all duration-150 hover:border-[color:var(--danger)] hover:text-[color:var(--danger)]"
+                                    onClick={cancelEditing}
+                                >
                                     <FiX /> Cancel
                                 </button>
                             </div>
                         </div>
                     ) : (
                         <>
-                            <h2>{currentUser?.name || currentUser?.username}</h2>
-                            <div className="profile-email">{currentUser?.email || "user@example.com"}</div>
+                            <h2 className="text-[22px] font-bold text-[color:var(--text-primary)] mb-0.5">{currentUser?.name || currentUser?.username}</h2>
+                            <div className="text-[color:var(--text-secondary)] text-[13px] mb-2.5">{currentUser?.email || "user@example.com"}</div>
                             {currentUser?.phone && (
-                                <div className="profile-email">{currentUser.phone}</div>
+                                <div className="text-[color:var(--text-secondary)] text-[13px] mb-2.5">{currentUser.phone}</div>
                             )}
-                            <span className="profile-role-badge">
+                            <span className="inline-block py-1 px-3 bg-[color:var(--accent-light)] text-[color:var(--accent)] rounded-full text-[11px] font-semibold">
                                 {isTeacher ? "Teacher Account" : "Student Account"}
                             </span>
                         </>
                     )}
                 </div>
                 {!editing && (
-                    <div className="profile-header-actions">
-                        <button className="profile-icon-btn" onClick={startEditing} title="Edit Profile">
+                    <div className="flex gap-1.5 flex-shrink-0">
+                        <button
+                            className="w-9 h-9 bg-transparent border border-[color:var(--border)] rounded cursor-pointer text-[color:var(--text-secondary)] text-[15px] flex items-center justify-center transition-all duration-150 hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] hover:bg-[color:var(--accent-light)]"
+                            onClick={startEditing}
+                            title="Edit Profile"
+                        >
                             <FiEdit2 />
                         </button>
-                        <button className="profile-icon-btn" onClick={() => setShowPasswordForm(!showPasswordForm)} title="Change Password">
+                        <button
+                            className="w-9 h-9 bg-transparent border border-[color:var(--border)] rounded cursor-pointer text-[color:var(--text-secondary)] text-[15px] flex items-center justify-center transition-all duration-150 hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] hover:bg-[color:var(--accent-light)]"
+                            onClick={() => setShowPasswordForm(!showPasswordForm)}
+                            title="Change Password"
+                        >
                             <FiLock />
                         </button>
                     </div>
@@ -233,40 +261,47 @@ const Profile = () => {
 
             {/* Change Password Form */}
             {showPasswordForm && (
-                <div className="profile-section" style={{ marginBottom: '20px' }}>
-                    <h3 className="profile-section-title"><FiLock /> Change Password</h3>
-                    <form className="password-form" onSubmit={handleChangePassword}>
-                        <input
-                            type="password"
-                            className="profile-edit-input"
+                <div className="bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-lg p-5 mb-5">
+                    <h3 className="flex items-center gap-2 text-base font-semibold text-[color:var(--text-primary)] mb-4">
+                        <FiLock /> Change Password
+                    </h3>
+                    <form className="flex flex-col gap-2.5" onSubmit={handleChangePassword}>
+                        <PasswordInput
+                            className={inputStyles}
                             placeholder="Current password"
                             value={currentPassword}
                             onChange={(e) => setCurrentPassword(e.target.value)}
                         />
-                        <input
-                            type="password"
-                            className="profile-edit-input"
+                        <PasswordInput
+                            className={inputStyles}
                             placeholder="New password (min 8 chars)"
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
                         />
-                        <input
-                            type="password"
-                            className="profile-edit-input"
+                        <PasswordInput
+                            className={inputStyles}
                             placeholder="Confirm new password"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                         />
-                        <div className="profile-edit-actions">
-                            <button type="submit" className="profile-save-btn" disabled={changingPassword}>
+                        <div className="flex gap-2 mt-1">
+                            <button
+                                type="submit"
+                                className="flex items-center gap-1.5 py-2 px-4 bg-[color:var(--accent)] text-white border-none rounded font-sans text-[13px] font-medium cursor-pointer transition-all duration-150 hover:bg-[color:var(--accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={changingPassword}
+                            >
                                 <FiSave /> {changingPassword ? "Changing..." : "Change Password"}
                             </button>
-                            <button type="button" className="profile-cancel-btn" onClick={() => {
-                                setShowPasswordForm(false);
-                                setCurrentPassword("");
-                                setNewPassword("");
-                                setConfirmPassword("");
-                            }}>
+                            <button
+                                type="button"
+                                className="flex items-center gap-1.5 py-2 px-4 bg-[color:var(--bg-hover)] text-[color:var(--text-secondary)] border border-[color:var(--border)] rounded font-sans text-[13px] font-medium cursor-pointer transition-all duration-150 hover:border-[color:var(--danger)] hover:text-[color:var(--danger)]"
+                                onClick={() => {
+                                    setShowPasswordForm(false);
+                                    setCurrentPassword("");
+                                    setNewPassword("");
+                                    setConfirmPassword("");
+                                }}
+                            >
                                 <FiX /> Cancel
                             </button>
                         </div>
@@ -275,68 +310,67 @@ const Profile = () => {
             )}
 
             {/* Stats Grid */}
-            <div className="profile-stats-grid">
-                <div className="profile-stat-card">
-                    <div className="stat-icon-wrapper" style={{ backgroundColor: "var(--accent-light)", color: "var(--accent)" }}>
+            <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3.5 mb-5">
+                <div className="flex items-center gap-3.5 bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-lg p-[18px]">
+                    <div className="w-11 h-11 rounded flex items-center justify-center text-lg flex-shrink-0 bg-[color:var(--accent-light)] text-[color:var(--accent)]">
                         <FiBookOpen />
                     </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{totalItems}</span>
-                        <span className="stat-label">{isTeacher ? "Quizzes Created" : "Quizzes Taken"}</span>
+                    <div className="flex flex-col">
+                        <span className="text-[22px] font-bold text-[color:var(--text-primary)]">{totalItems}</span>
+                        <span className="text-xs text-[color:var(--text-secondary)]">{isTeacher ? "Quizzes Created" : "Quizzes Taken"}</span>
                     </div>
                 </div>
 
-                <div className="profile-stat-card">
-                    <div className="stat-icon-wrapper" style={{ backgroundColor: "var(--success-light)", color: "var(--success)" }}>
+                <div className="flex items-center gap-3.5 bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-lg p-[18px]">
+                    <div className="w-11 h-11 rounded flex items-center justify-center text-lg flex-shrink-0 bg-[color:var(--success-light)] text-[color:var(--success)]">
                         {isTeacher ? <FiActivity /> : <FiTrendingUp />}
                     </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{secondaryStat}{!isTeacher && '%'}</span>
-                        <span className="stat-label">{isTeacher ? "Total Questions" : "Avg Score"}</span>
+                    <div className="flex flex-col">
+                        <span className="text-[22px] font-bold text-[color:var(--text-primary)]">{secondaryStat}{!isTeacher && '%'}</span>
+                        <span className="text-xs text-[color:var(--text-secondary)]">{isTeacher ? "Total Questions" : "Avg Score"}</span>
                     </div>
                 </div>
 
                 {!isTeacher && (
-                    <div className="profile-stat-card">
-                        <div className="stat-icon-wrapper" style={{ backgroundColor: "var(--warning-light)", color: "var(--warning)" }}>
+                    <div className="flex items-center gap-3.5 bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-lg p-[18px]">
+                        <div className="w-11 h-11 rounded flex items-center justify-center text-lg flex-shrink-0 bg-[color:var(--warning-light)] text-[color:var(--warning)]">
                             <FiAward />
                         </div>
-                        <div className="stat-content">
-                            <span className="stat-value">{tertiaryStat}</span>
-                            <span className="stat-label">Distinctions</span>
+                        <div className="flex flex-col">
+                            <span className="text-[22px] font-bold text-[color:var(--text-primary)]">{tertiaryStat}</span>
+                            <span className="text-xs text-[color:var(--text-secondary)]">Distinctions</span>
                         </div>
                     </div>
                 )}
             </div>
 
             {/* Activity / List Section */}
-            <div className="profile-section">
-                <h3 className="profile-section-title">
+            <div className="bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-lg p-5">
+                <h3 className="flex items-center gap-2 text-base font-semibold text-[color:var(--text-primary)] mb-4">
                     {isTeacher ? <><FiBookOpen /> My Quizzes</> : <><FiActivity /> Recent Activity</>}
                 </h3>
 
-                <div className="activity-list">
+                <div className="flex flex-col gap-2">
                     {data.length === 0 ? (
-                        <p className="profile-empty">No activity yet.</p>
+                        <p className="text-center py-9 px-5 text-[color:var(--text-muted)] text-[13px]">No activity yet.</p>
                     ) : (
                         data.map((item, index) => (
                             <div
                                 key={item.id || index}
-                                className="activity-card"
-                                style={isTeacher ? { cursor: 'pointer' } : {}}
+                                className={`flex flex-col sm:flex-row justify-between items-center gap-2 p-3.5 bg-[color:var(--bg-primary)] border border-[color:var(--border)] rounded transition-all duration-150 hover:border-[color:var(--accent-subtle)] text-center sm:text-left ${isTeacher ? 'cursor-pointer' : ''}`}
                                 onClick={() => isTeacher && navigate(`/quiz/${item.id}/students`)}
                             >
-                                <div className="activity-info">
-                                    <h4>{item.title || item.quizTitle || item.quiz?.title || "Untitled Quiz"}</h4>
-                                    <span className="activity-date">
+                                <div>
+                                    <h4 className="text-sm font-medium text-[color:var(--text-primary)] mb-0.5">{item.title || item.quizTitle || item.quiz?.title || "Untitled Quiz"}</h4>
+                                    <span className="text-xs text-[color:var(--text-muted)]">
                                         {isTeacher
                                             ? `${item.questionCount || item.questions?.length || 0} Questions • ${item.status || 'DRAFT'}`
                                             : `Completed ${item.attemptedAt ? new Date(item.attemptedAt).toLocaleDateString() : ''}`}
                                     </span>
                                 </div>
-                                <div className={`activity-score ${!isTeacher ? getScoreClass(item.score) : ''}`}>
+                                <div className={`text-lg font-bold ${!isTeacher ? getScoreClass(item.score) : ''}`}>
                                     {isTeacher ? (
-                                        <span style={{ fontSize: '14px', color: 'var(--accent)', fontWeight: 500 }}>
+                                        <span className="text-sm text-[color:var(--accent)] font-medium">
                                             View Students →
                                         </span>
                                     ) : (
@@ -347,6 +381,29 @@ const Profile = () => {
                         ))
                     )}
                 </div>
+
+                {/* Pagination for student attempts */}
+                {!isTeacher && attemptTotalPages > 1 && (
+                    <div className="flex justify-center items-center gap-4 pt-4 border-t border-[color:var(--border-light)] mt-4">
+                        <button
+                            className="flex items-center gap-1 py-2 px-3.5 bg-[color:var(--bg-primary)] border border-[color:var(--border)] text-[color:var(--text-secondary)] rounded font-sans text-[13px] cursor-pointer transition-all duration-150 hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed"
+                            onClick={() => setAttemptPage(p => Math.max(0, p - 1))}
+                            disabled={attemptPage === 0}
+                        >
+                            <FiChevronLeft /> Prev
+                        </button>
+                        <span className="text-[13px] text-[color:var(--text-muted)]">
+                            Page {attemptPage + 1} of {attemptTotalPages}
+                        </span>
+                        <button
+                            className="flex items-center gap-1 py-2 px-3.5 bg-[color:var(--bg-primary)] border border-[color:var(--border)] text-[color:var(--text-secondary)] rounded font-sans text-[13px] cursor-pointer transition-all duration-150 hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed"
+                            onClick={() => setAttemptPage(p => Math.min(attemptTotalPages - 1, p + 1))}
+                            disabled={attemptPage >= attemptTotalPages - 1}
+                        >
+                            Next <FiChevronRight />
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -36,9 +36,10 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Token expired or invalid - clear storage and redirect to login
+            // Token expired or invalid - dispatch event so UserContext can clear state
+            // This avoids using window.location which bypasses React Router
             localStorage.removeItem('user');
-            window.location.href = '/login';
+            window.dispatchEvent(new Event('auth:expired'));
         }
         return Promise.reject(error);
     }
@@ -62,10 +63,12 @@ export const authAPI = {
 // Quiz API
 export const quizAPI = {
     // Get all quizzes with pagination
-    getAllQuizzes: (page = 0, size = 10, search = '', category = '') => {
+    getAllQuizzes: (page = 0, size = 10, search = '', category = '', difficulty = '', tags = '') => {
         const params = new URLSearchParams({ page, size });
         if (search) params.append('search', search);
         if (category && category !== 'All') params.append('category', category);
+        if (difficulty && difficulty !== 'All') params.append('difficulty', difficulty);
+        if (tags) params.append('tags', tags);
         return api.get(`/api/quizzes?${params.toString()}`);
     },
 
@@ -110,6 +113,15 @@ export const quizAPI = {
 
     getCategories: () =>
         api.get('/api/categories'),
+
+    getTags: () =>
+        api.get('/api/categories/tags'),
+
+    exportQuiz: (id) =>
+        api.get(`/api/quizzes/${id}/export`, { responseType: 'blob' }),
+
+    exportAttempts: (id) =>
+        api.get(`/api/quizzes/${id}/attempts/export`, { responseType: 'blob' }),
 };
 
 // Profile API
