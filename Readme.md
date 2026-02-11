@@ -60,19 +60,31 @@ A full-stack quiz management platform built with **Spring Boot** and **React**. 
 - PostgreSQL 15+
 - Node.js 18+ (for frontend)
 
+### Quick Start (Windows)
+
+```bash
+# Start backend (Terminal 1)
+start-backend.bat
+
+# Install frontend dependencies (first time only)
+install-frontend.bat
+
+# Start frontend (Terminal 2)
+start-frontend.bat
+```
+
 ### Backend Setup
 
-1. **Clone the repository:**
+1. **Navigate to the backend directory:**
    ```bash
-   git clone https://github.com/tukaramchate/quiz--app.git
-   cd Java-Quiz
+   cd backend
    ```
 
 2. **Configure the database:**
    
-   Create a PostgreSQL database and update `src/main/resources/application.properties`:
+   Copy `.env.example` to `.env` and update values, or edit `src/main/resources/application.properties`:
    ```properties
-   spring.datasource.url=jdbc:postgresql://localhost:5432/quiz_db
+   spring.datasource.url=jdbc:postgresql://localhost:5432/quiz-app
    spring.datasource.username=your_username
    spring.datasource.password=your_password
    ```
@@ -88,15 +100,22 @@ A full-stack quiz management platform built with **Spring Boot** and **React**. 
 
 1. **Navigate to frontend directory:**
    ```bash
-   cd user_interface
+   cd frontend
    ```
 
-2. **Install dependencies:**
+2. **Configure environment:**
+   
+   Copy `.env.example` to `.env` (defaults to `http://localhost:8080` for API):
+   ```bash
+   cp .env.example .env
+   ```
+
+3. **Install dependencies:**
    ```bash
    npm install
    ```
 
-3. **Start the development server:**
+4. **Start the development server:**
    ```bash
    npm start
    ```
@@ -107,7 +126,7 @@ A full-stack quiz management platform built with **Spring Boot** and **React**. 
 
 ## 📖 API Documentation
 
-Full API documentation is available at: [`docs/FRONTEND_API_DOCUMENTATION.md`](docs/FRONTEND_API_DOCUMENTATION.md)
+Full API documentation is available at: [`backend/docs/FRONTEND_API_DOCUMENTATION.md`](backend/docs/FRONTEND_API_DOCUMENTATION.md)
 
 ### Key Endpoints
 
@@ -128,19 +147,31 @@ Full API documentation is available at: [`docs/FRONTEND_API_DOCUMENTATION.md`](d
 
 ```
 Java-Quiz/
-├── src/main/java/isil/java_quiz_server/
-│   ├── controller/       # REST API controllers
-│   ├── dto/              # Data Transfer Objects
-│   ├── exception/        # Custom exceptions & handlers
-│   ├── model/            # JPA entities
-│   ├── repository/       # Spring Data repositories
-│   ├── security/         # JWT & authentication
-│   └── service/          # Business logic
-├── src/main/resources/
-│   └── application.properties
-├── docs/
-│   └── FRONTEND_API_DOCUMENTATION.md
-└── user_interface/       # React frontend
+├── backend/                      # Spring Boot API server
+│   ├── src/main/java/isil/java_quiz_server/
+│   │   ├── controller/           # REST API controllers
+│   │   ├── dto/                  # Data Transfer Objects
+│   │   ├── exception/            # Custom exceptions & handlers
+│   │   ├── model/                # JPA entities
+│   │   ├── repository/           # Spring Data repositories
+│   │   ├── security/             # JWT & authentication
+│   │   └── service/              # Business logic
+│   ├── src/main/resources/
+│   │   └── application.properties
+│   ├── database/                 # SQL migrations
+│   ├── docs/                     # API documentation
+│   └── pom.xml
+├── frontend/                     # React SPA client
+│   ├── src/
+│   │   ├── api/                  # Axios API client
+│   │   ├── components/           # Reusable components
+│   │   ├── context/              # React context (auth)
+│   │   ├── pages/                # Page components
+│   │   └── styles/               # Global styles
+│   └── package.json
+├── start-backend.bat             # Run backend
+├── start-frontend.bat            # Run frontend
+└── Readme.md
 ```
 
 ---
@@ -159,6 +190,7 @@ Java-Quiz/
 
 ```bash
 # Run all tests
+cd backend
 ./mvnw test
 
 # Run with coverage
