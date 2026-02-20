@@ -18,7 +18,19 @@ import java.util.List;
 public class QuizDTO {
     private Long id;
     private String title;
+    private String description;
     private String username;
     private String category;
+    private String difficulty;
+    private String tags;
+    private String shareCode;
+    private Integer timeLimitMinutes;
+    private Integer passPercentage;
+    private Boolean negativeMarking;
+    private Boolean shuffleQuestions;
+    private Boolean shuffleOptions;
+    private java.time.LocalDateTime startTime;
+    private java.time.LocalDateTime endTime;
+    private Integer totalMarks;
     private List<QuestionDTO> questions;
 }

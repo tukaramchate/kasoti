@@ -5,6 +5,7 @@ import {
   Route,
 } from "react-router-dom";
 import { ProtectedRoute, GuestRoute, RoleGuard } from "./components/RouteGuards";
+import ErrorBoundary from "./components/ErrorBoundary";
 import LoadingSpinner from "./components/LoadingSpinner";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -33,6 +34,7 @@ const SuspenseFallback = () => (
 
 const App = () => {
   return (
+    <ErrorBoundary>
     <Router>
       <Suspense fallback={<SuspenseFallback />}>
         <Routes>
@@ -75,6 +77,7 @@ const App = () => {
       </Suspense>
       <ToastContainer />
     </Router>
+    </ErrorBoundary>
   );
 };
 

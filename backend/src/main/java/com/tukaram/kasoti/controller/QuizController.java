@@ -1,13 +1,17 @@
 package com.tukaram.kasoti.controller;
 
+import com.tukaram.kasoti.dto.AnswerDTO;
+import com.tukaram.kasoti.dto.CreateQuizRequest;
+import com.tukaram.kasoti.dto.EvaluateAnswerRequest;
+import com.tukaram.kasoti.dto.LeaderboardEntryDTO;
 import com.tukaram.kasoti.dto.PublishQuizResponse;
 import com.tukaram.kasoti.dto.QuizDTO;
 import com.tukaram.kasoti.dto.QuizResultResponse;
 import com.tukaram.kasoti.dto.QuizSummaryDTO;
 import com.tukaram.kasoti.dto.SubmitQuizRequest;
 import com.tukaram.kasoti.model.Quiz;
-import com.tukaram.kasoti.model.QuizAttempt;
 import com.tukaram.kasoti.security.UserPrincipal;
+import com.tukaram.kasoti.service.EvaluationService;
 import com.tukaram.kasoti.service.ExportService;
 import com.tukaram.kasoti.service.QuizService;
 import jakarta.validation.Valid;
@@ -39,6 +43,7 @@ public class QuizController {
 
     private final QuizService quizService;
     private final ExportService exportService;
+    private final EvaluationService evaluationService;
 
     // ========== Public Endpoints ==========
 
@@ -68,7 +73,7 @@ public class QuizController {
     }
 
     @GetMapping("/{id}/leaderboard")
-    public ResponseEntity<List<QuizAttempt>> getLeaderboard(@PathVariable Long id) {
+    public ResponseEntity<List<LeaderboardEntryDTO>> getLeaderboard(@PathVariable Long id) {
         return ResponseEntity.ok(quizService.getQuizLeaderboard(id));
     }
 
@@ -100,18 +105,18 @@ public class QuizController {
 
     @PostMapping
     public ResponseEntity<Quiz> createQuiz(
-            @Valid @RequestBody Quiz quiz,
+            @Valid @RequestBody CreateQuizRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(quizService.createQuiz(quiz, principal));
+                .body(quizService.createQuiz(request, principal));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Quiz> updateQuiz(
             @PathVariable Long id,
-            @Valid @RequestBody Quiz quizDetails,
+            @Valid @RequestBody CreateQuizRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(quizService.updateQuiz(id, quizDetails, principal));
+        return ResponseEntity.ok(quizService.updateQuiz(id, request, principal));
     }
 
     @DeleteMapping("/{id}")
@@ -137,7 +142,7 @@ public class QuizController {
     }
 
     @GetMapping("/{id}/students")
-    public ResponseEntity<List<QuizAttempt>> getQuizStudents(
+    public ResponseEntity<List<LeaderboardEntryDTO>> getQuizStudents(
             @PathVariable Long id,
             @RequestParam(required = false, defaultValue = "score_desc") String sort,
             @AuthenticationPrincipal UserPrincipal principal) {
@@ -182,6 +187,32 @@ public class QuizController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(csvContent);
+    }
+
+    // ========== DESCRIPTIVE Answer Evaluation Endpoints ==========
+
+    /**
+     * Get all pending DESCRIPTIVE answers for a quiz.
+     * Only the quiz creator or admin can access.
+     */
+    @GetMapping("/{id}/pending-evaluations")
+    public ResponseEntity<List<AnswerDTO>> getPendingEvaluations(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(evaluationService.getPendingAnswers(id, principal));
+    }
+
+    /**
+     * Evaluate a single DESCRIPTIVE answer.
+     * Only the quiz creator or admin can evaluate.
+     */
+    @PutMapping("/answers/{answerId}/evaluate")
+    public ResponseEntity<AnswerDTO> evaluateAnswer(
+            @PathVariable Long answerId,
+            @Valid @RequestBody EvaluateAnswerRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(evaluationService.evaluateAnswer(
+                answerId, request.getMarks(), request.getComment(), principal));
     }
 
 }

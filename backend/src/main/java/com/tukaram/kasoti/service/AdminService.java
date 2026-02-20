@@ -4,10 +4,12 @@ import com.tukaram.kasoti.dto.*;
 import com.tukaram.kasoti.exception.BadRequestException;
 import com.tukaram.kasoti.exception.ResourceNotFoundException;
 import com.tukaram.kasoti.model.Quiz;
+import com.tukaram.kasoti.model.QuestionType;
 import com.tukaram.kasoti.model.QuizAttempt;
 import com.tukaram.kasoti.model.QuizStatus;
 import com.tukaram.kasoti.model.Role;
 import com.tukaram.kasoti.model.User;
+import com.tukaram.kasoti.repository.AnswerRepository;
 import com.tukaram.kasoti.repository.QuizAttemptRepository;
 import com.tukaram.kasoti.repository.QuizRepository;
 import com.tukaram.kasoti.repository.UserRepository;
@@ -19,6 +21,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * Service for admin-only operations.
@@ -32,16 +36,19 @@ public class AdminService {
     private final UserRepository userRepository;
     private final QuizRepository quizRepository;
     private final QuizAttemptRepository quizAttemptRepository;
+    private final AnswerRepository answerRepository;
+
+    private static final int MAX_PAGE_SIZE = 100;
 
     // ========== User Management ==========
 
     public Page<UserAdminDTO> getAllUsers(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        Pageable pageable = PageRequest.of(Math.max(0, page), capSize(size), Sort.by("id").descending());
         return userRepository.findAll(pageable).map(this::convertToAdminDTO);
     }
 
     public Page<UserAdminDTO> getUsersByRole(Role role, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        Pageable pageable = PageRequest.of(Math.max(0, page), capSize(size), Sort.by("id").descending());
         return userRepository.findByRole(role, pageable).map(this::convertToAdminDTO);
     }
 
@@ -69,7 +76,12 @@ public class AdminService {
     }
 
     @Transactional(readOnly = false)
-    public void deleteUser(Long userId) {
+    public void deleteUser(Long userId, Long callingAdminId) {
+        // M3: Prevent admin from deleting themselves
+        if (userId.equals(callingAdminId)) {
+            throw new BadRequestException("Cannot delete your own account.");
+        }
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
@@ -80,13 +92,29 @@ public class AdminService {
             }
         }
 
+        // Delete ElementCollection rows first, then answers, then attempts, then user
+        answerRepository.deleteSelectedOptionsByUserId(userId);
+        answerRepository.deleteAllByUserId(userId);
+        quizAttemptRepository.deleteAllByUserId(userId);
+
+        // If user is a teacher, clean up their quizzes' attempts too
+        if (user.getRole() == Role.TEACHER) {
+            List<Quiz> quizzes = quizRepository.findByCreatedById(userId);
+            for (Quiz quiz : quizzes) {
+                answerRepository.deleteSelectedOptionsByQuizId(quiz.getId());
+                answerRepository.deleteAllByQuizId(quiz.getId());
+                quizAttemptRepository.deleteAllByQuizId(quiz.getId());
+            }
+            quizRepository.deleteAll(quizzes);
+        }
+
         userRepository.delete(user);
     }
 
     // ========== Quiz Management ==========
 
     public Page<Quiz> getAllQuizzes(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        Pageable pageable = PageRequest.of(Math.max(0, page), capSize(size), Sort.by("id").descending());
         return quizRepository.findAll(pageable);
     }
 
@@ -94,6 +122,11 @@ public class AdminService {
     public void deleteQuiz(Long quizId) {
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new ResourceNotFoundException("Quiz", "id", quizId));
+
+        // Delete ElementCollection rows first, then answers, then attempts, then quiz
+        answerRepository.deleteSelectedOptionsByQuizId(quizId);
+        answerRepository.deleteAllByQuizId(quizId);
+        quizAttemptRepository.deleteAllByQuizId(quizId);
         quizRepository.delete(quiz);
     }
 
@@ -116,8 +149,8 @@ public class AdminService {
     // ========== Attempt Management ==========
 
     public Page<DetailedAttemptDTO> getAllAttempts(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("attemptedAt").descending());
-        return quizAttemptRepository.findAll(pageable).map(this::convertToDetailedDTO);
+        Pageable pageable = PageRequest.of(Math.max(0, page), capSize(size));
+        return quizAttemptRepository.findAllWithUserAndQuiz(pageable).map(this::convertToDetailedDTO);
     }
 
     public DetailedAttemptDTO getAttemptById(Long attemptId) {
@@ -141,6 +174,10 @@ public class AdminService {
                 .build();
     }
 
+    private int capSize(int size) {
+        return Math.max(1, Math.min(size, MAX_PAGE_SIZE));
+    }
+
     private DetailedAttemptDTO convertToDetailedDTO(QuizAttempt attempt) {
         return DetailedAttemptDTO.builder()
                 .attemptId(attempt.getId())
@@ -157,15 +194,28 @@ public class AdminService {
                 .attemptedAt(attempt.getAttemptedAt())
                 .answers(attempt.getAnswers() != null
                         ? attempt.getAnswers().stream()
-                                .map(a -> AnswerDTO.builder()
-                                        .questionId(a.getQuestion().getId())
-                                        .questionText(a.getQuestion().getText())
-                                        .selectedOption(a.getSelectedOption())
-                                        .correctOption(a.getQuestion().getCorrectOption())
-                                        .isCorrect(a.getIsCorrect())
-                                        .marksObtained(a.getMarksObtained())
-                                        .maxMarks(a.getQuestion().getMarks())
-                                        .build())
+                                .map(a -> {
+                                    QuestionType type = a.getQuestion().getQuestionType() != null
+                                            ? a.getQuestion().getQuestionType()
+                                            : QuestionType.MCQ;
+                                    return AnswerDTO.builder()
+                                            .id(a.getId())
+                                            .questionId(a.getQuestion().getId())
+                                            .questionText(a.getQuestion().getText())
+                                            .questionType(type)
+                                            .selectedOption(a.getSelectedOption())
+                                            .correctOption(a.getQuestion().getCorrectOption())
+                                            .selectedOptions(a.getSelectedOptions())
+                                            .correctOptions(a.getQuestion().getCorrectOptions())
+                                            .textAnswer(a.getTextAnswer())
+                                            .modelAnswer(a.getQuestion().getModelAnswer())
+                                            .isCorrect(a.getIsCorrect())
+                                            .marksObtained(a.getMarksObtained())
+                                            .maxMarks(a.getQuestion().getMarks())
+                                            .evaluationStatus(a.getEvaluationStatus())
+                                            .evaluationComment(a.getEvaluationComment())
+                                            .build();
+                                })
                                 .toList()
                         : null)
                 .build();

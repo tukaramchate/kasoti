@@ -531,16 +531,34 @@ const Admin = () => {
                                 ) : attemptDetail?.answers?.length > 0 ? (
                                   <div className="flex flex-col gap-2">
                                     <h4 className="text-sm font-semibold text-[color:var(--text-primary)] mb-1">Answer Details</h4>
-                                    {attemptDetail.answers.map((ans, idx) => (
-                                      <div key={idx} className={`flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 py-2 px-3 rounded text-[13px] ${ans.isCorrect ? 'bg-[color:var(--success-light)]' : 'bg-[color:var(--danger-light)]'}`}>
-                                        <span className="font-medium text-[color:var(--text-primary)] flex-1">Q{idx + 1}: {ans.questionText}</span>
-                                        <div className="flex gap-3 text-xs">
-                                          <span>Selected: <strong>{ans.selectedOption || 'None'}</strong></span>
-                                          <span>Correct: <strong>{ans.correctOption}</strong></span>
-                                          <span>{ans.marksObtained}/{ans.maxMarks}</span>
+                                    {attemptDetail.answers.map((ans, idx) => {
+                                      const qType = ans.questionType || 'MCQ';
+                                      return (
+                                      <div key={idx} className={`flex flex-col gap-1 py-2 px-3 rounded text-[13px] ${ans.isCorrect == null ? 'bg-[color:var(--bg-hover)]' : ans.isCorrect ? 'bg-[color:var(--success-light)]' : 'bg-[color:var(--danger-light)]'}`}>
+                                        <span className="font-medium text-[color:var(--text-primary)]">Q{idx + 1}: {ans.questionText} <span className="text-[10px] uppercase text-[color:var(--text-muted)]">({qType.replace('_','/')})</span></span>
+                                        <div className="flex flex-wrap gap-3 text-xs">
+                                          {qType === 'DESCRIPTIVE' ? (
+                                            <>
+                                              <span>Answer: <strong>{ans.textAnswer || 'None'}</strong></span>
+                                              <span>{ans.isCorrect == null ? 'Pending Review' : `${ans.marksObtained}/${ans.maxMarks}`}</span>
+                                            </>
+                                          ) : qType === 'MSQ' ? (
+                                            <>
+                                              <span>Selected: <strong>{(ans.selectedOptions || []).join(', ') || 'None'}</strong></span>
+                                              <span>Correct: <strong>{(ans.correctOptions || []).join(', ')}</strong></span>
+                                              <span>{ans.marksObtained}/{ans.maxMarks}</span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <span>Selected: <strong>{ans.selectedOption || 'None'}</strong></span>
+                                              <span>Correct: <strong>{ans.correctOption}</strong></span>
+                                              <span>{ans.marksObtained}/{ans.maxMarks}</span>
+                                            </>
+                                          )}
                                         </div>
                                       </div>
-                                    ))}
+                                      );
+                                    })}
                                   </div>
                                 ) : (
                                   <p className="text-[color:var(--text-muted)] text-sm">No answer details available.</p>

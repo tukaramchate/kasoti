@@ -95,8 +95,13 @@ export const quizAPI = {
         api.post(`/api/quizzes/${id}/close`),
 
     // Submit quiz - answers format: { questionId: "A"|"B"|"C"|"D" }
-    submitQuiz: (id, answers, timeTakenSeconds) =>
-        api.post(`/api/quizzes/${id}/submit`, { answers, timeTakenSeconds }),
+    // Extended: multiAnswers for MSQ, textAnswers for DESCRIPTIVE
+    submitQuiz: (id, answers, timeTakenSeconds, multiAnswers = null, textAnswers = null) => {
+        const payload = { answers, timeTakenSeconds };
+        if (multiAnswers) payload.multiAnswers = multiAnswers;
+        if (textAnswers) payload.textAnswers = textAnswers;
+        return api.post(`/api/quizzes/${id}/submit`, payload);
+    },
 
     getLeaderboard: (id) =>
         api.get(`/api/quizzes/${id}/leaderboard`),
@@ -122,6 +127,13 @@ export const quizAPI = {
 
     exportAttempts: (id) =>
         api.get(`/api/quizzes/${id}/attempts/export`, { responseType: 'blob' }),
+
+    // DESCRIPTIVE answer evaluation (teacher)
+    getPendingEvaluations: (id) =>
+        api.get(`/api/quizzes/${id}/pending-evaluations`),
+
+    evaluateAnswer: (answerId, marks, comment = '') =>
+        api.put(`/api/quizzes/answers/${answerId}/evaluate`, { marks, comment }),
 };
 
 // Profile API

@@ -30,6 +30,8 @@ const Home = () => {
   const [myQuizzesLoading, setMyQuizzesLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedDifficulty, setSelectedDifficulty] = useState('All');
+  const [selectedTag, setSelectedTag] = useState('');
+  const [availableTags, setAvailableTags] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery);
   const [categories, setCategories] = useState(['All']);
@@ -54,7 +56,16 @@ const Home = () => {
         console.error("Error fetching categories:", error);
       }
     };
+    const fetchTags = async () => {
+      try {
+        const response = await quizAPI.getTags();
+        setAvailableTags(response.data || []);
+      } catch (error) {
+        console.error("Error fetching tags:", error);
+      }
+    };
     fetchCategories();
+    fetchTags();
   }, []);
 
   const fetchMyQuizzes = useCallback(async () => {
@@ -77,7 +88,7 @@ const Home = () => {
   const fetchQuizzes = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await quizAPI.getAllQuizzes(page, pageSize, debouncedSearch, selectedCategory, selectedDifficulty);
+      const response = await quizAPI.getAllQuizzes(page, pageSize, debouncedSearch, selectedCategory, selectedDifficulty, selectedTag);
 
       // Handle paginated response
       if (response.data.content) {
@@ -96,7 +107,7 @@ const Home = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch, selectedCategory, selectedDifficulty]);
+  }, [page, debouncedSearch, selectedCategory, selectedDifficulty, selectedTag]);
 
   useEffect(() => {
     fetchQuizzes();
@@ -105,7 +116,7 @@ const Home = () => {
   // Reset to first page when search or category changes
   useEffect(() => {
     setPage(0);
-  }, [debouncedSearch, selectedCategory, selectedDifficulty]);
+  }, [debouncedSearch, selectedCategory, selectedDifficulty, selectedTag]);
 
   const handleLogout = () => {
     logout();
@@ -303,6 +314,37 @@ const Home = () => {
             </button>
           ))}
         </div>
+
+        {/* Tags Filter */}
+        {availableTags.length > 0 && (
+          <div className="flex items-center gap-2 mb-5 flex-wrap">
+            <FiFilter className="text-[color:var(--text-muted)] text-sm" />
+            <span className="text-xs text-[color:var(--text-muted)]">Tags:</span>
+            <button
+              className={`py-1 px-3 border rounded-full font-sans text-[11px] font-medium cursor-pointer transition-all duration-150 ${
+                !selectedTag
+                  ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
+                  : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]'
+              }`}
+              onClick={() => setSelectedTag('')}
+            >
+              All
+            </button>
+            {availableTags.map((tag) => (
+              <button
+                key={tag}
+                className={`py-1 px-3 border rounded-full font-sans text-[11px] font-medium cursor-pointer transition-all duration-150 ${
+                  selectedTag === tag
+                    ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
+                    : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]'
+                }`}
+                onClick={() => setSelectedTag(tag)}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        )}
 
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tukaram.kasoti.exception.ForbiddenException;
 import com.tukaram.kasoti.model.Quiz;
 import com.tukaram.kasoti.model.QuizAttempt;
+import com.tukaram.kasoti.repository.QuizAttemptRepository;
 import com.tukaram.kasoti.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ import java.util.List;
 public class ExportService {
 
     private final QuizService quizService;
+    private final QuizAttemptRepository quizAttemptRepository;
     private final ObjectMapper objectMapper;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -46,25 +48,25 @@ public class ExportService {
         Quiz quiz = quizService.getQuizById(quizId);
         validateExportAccess(quiz, principal);
 
-        // Get all attempts for this quiz
-        List<QuizAttempt> attempts = quizService.getQuizStudents(quizId, principal, "score_desc");
+        // Get all attempts for this quiz with user eagerly loaded (no N+1)
+        List<QuizAttempt> attempts = quizAttemptRepository
+                .findByQuizIdWithUserForExport(quizId);
 
         // Build CSV content
         StringBuilder csv = new StringBuilder();
 
         // CSV Header
-        csv.append("Student Name,Student Email,Score,Total Questions,Percentage,Submitted At,Time Taken (minutes)\n");
+        csv.append("Student Name,Student Email,Marks Obtained,Total Marks,Percentage,Submitted At,Time Taken (minutes)\n");
 
         // CSV Rows
         for (QuizAttempt attempt : attempts) {
             csv.append(escapeCsvValue(attempt.getUser().getName())).append(",");
             csv.append(escapeCsvValue(attempt.getUser().getEmail())).append(",");
-            csv.append(attempt.getScore()).append(",");
-            csv.append(attempt.getQuiz().getQuestions().size()).append(",");
+            csv.append(attempt.getMarksObtained() != null ? attempt.getMarksObtained() : attempt.getScore()).append(",");
+            csv.append(attempt.getTotalMarks() != null ? attempt.getTotalMarks() : attempt.getTotalQuestions()).append(",");
 
-            // Calculate percentage
-            int totalQuestions = attempt.getQuiz().getQuestions().size();
-            double percentage = totalQuestions > 0 ? (attempt.getScore() * 100.0 / totalQuestions) : 0;
+            // Percentage — score is already stored as 0-100
+            double percentage = attempt.getScore() != null ? attempt.getScore() : 0;
             csv.append(String.format("%.2f", percentage)).append("%,");
 
             // Format attempted date
@@ -86,11 +88,23 @@ public class ExportService {
     }
 
     /**
-     * Escape special characters in CSV values.
+     * Escape special characters in CSV values and prevent formula injection.
+     * Prefixes dangerous characters (=, +, -, @, \t, \r) with a single quote
+     * to neutralize them when opened in Excel/Google Sheets.
      */
     private String escapeCsvValue(String value) {
         if (value == null) return "";
-        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+
+        // Prevent CSV formula injection
+        if (!value.isEmpty()) {
+            char first = value.charAt(0);
+            if (first == '=' || first == '+' || first == '-' || first == '@'
+                    || first == '\t' || first == '\r') {
+                value = "'" + value;
+            }
+        }
+
+        if (value.contains(",") || value.contains("\"") || value.contains("\n") || value.contains("'")) {
             return "\"" + value.replace("\"", "\"\"") + "\"";
         }
         return value;

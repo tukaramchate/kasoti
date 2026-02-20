@@ -1,6 +1,7 @@
 package com.tukaram.kasoti.config;
 
 import com.tukaram.kasoti.security.JwtAuthFilter;
+import com.tukaram.kasoti.security.CustomAuthenticationEntryPoint;
 import com.tukaram.kasoti.security.RateLimitFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -31,6 +32,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -65,23 +67,28 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/api/health/**",
-                                "/api/public/**")
+                                "/api/public/**",
+                                "/api/categories/**")
                         .permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/quizzes/share/**", "/api/quizzes/**").permitAll()
 
                         // Admin only endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                        // Teacher + Admin endpoints (General)
+                        // Teacher + Admin endpoints (MUST come before public quiz GET)
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/quizzes/my",
+                                "/api/quizzes/*/students",
+                                "/api/quizzes/*/pending-evaluations",
+                                "/api/quizzes/*/export",
+                                "/api/quizzes/*/attempts/export")
+                        .hasAnyRole("ADMIN", "TEACHER")
                         .requestMatchers(
                                 "/api/quizzes/*/publish",
                                 "/api/quizzes/*/close",
-                                "/api/quizzes/*/students",
-                                "/api/quizzes/my",
                                 "/api/dashboard/**")
                         .hasAnyRole("ADMIN", "TEACHER")
-
-                        // Teacher + Admin endpoints (Method Specific)
+                        .requestMatchers(HttpMethod.PUT, "/api/quizzes/answers/*/evaluate")
+                        .hasAnyRole("ADMIN", "TEACHER")
                         .requestMatchers(HttpMethod.POST, "/api/quizzes").hasAnyRole("ADMIN", "TEACHER")
                         .requestMatchers(HttpMethod.PUT, "/api/quizzes/**").hasAnyRole("ADMIN", "TEACHER")
                         .requestMatchers(HttpMethod.DELETE, "/api/quizzes/**").hasAnyRole("ADMIN", "TEACHER")
@@ -93,8 +100,18 @@ public class SecurityConfig {
                         .authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/quizzes/*/submit").authenticated()
 
+                        // Public quiz endpoints (listing, detail, share, leaderboard)
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/quizzes",
+                                "/api/quizzes/share/**",
+                                "/api/quizzes/*/leaderboard")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/quizzes/*").permitAll()
+
                         // Default - require authentication
                         .anyRequest().authenticated())
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(customAuthenticationEntryPoint))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

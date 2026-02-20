@@ -1,8 +1,8 @@
 package com.tukaram.kasoti.controller;
 
+import com.tukaram.kasoti.dto.AttemptSummaryDTO;
 import com.tukaram.kasoti.dto.DashboardStatsDTO;
 import com.tukaram.kasoti.dto.QuizStatisticsDTO;
-import com.tukaram.kasoti.model.QuizAttempt;
 import com.tukaram.kasoti.security.UserPrincipal;
 import com.tukaram.kasoti.service.DashboardService;
 import org.springframework.data.domain.Page;
@@ -43,12 +43,14 @@ public class DashboardController {
     }
 
     @GetMapping("/quizzes/{id}/stats")
-    public ResponseEntity<QuizStatisticsDTO> getQuizStats(@PathVariable Long id) {
-        return ResponseEntity.ok(dashboardService.getQuizStatistics(id));
+    public ResponseEntity<QuizStatisticsDTO> getQuizStats(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(dashboardService.getQuizStatistics(id, principal.getId()));
     }
 
     @GetMapping("/recent-attempts")
-    public ResponseEntity<List<QuizAttempt>> getRecentAttempts(
+    public ResponseEntity<List<AttemptSummaryDTO>> getRecentAttempts(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(defaultValue = "10") int limit) {
         return ResponseEntity.ok(dashboardService.getRecentAttempts(principal.getId(), limit));

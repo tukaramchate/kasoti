@@ -46,11 +46,14 @@ public class AuthService {
             throw new BadRequestException("Email already exists");
         }
 
-        // Determine role - by default STUDENT, allow TEACHER registration
-        // ADMIN can only be created by existing admin (handled elsewhere)
+        // Determine role - default STUDENT
+        // ADMIN and TEACHER cannot be self-registered; must be assigned by admin
         Role role = request.getRole();
         if (role == Role.ADMIN) {
             throw new BadRequestException("Admin accounts cannot be created through registration");
+        }
+        if (role == Role.TEACHER) {
+            throw new BadRequestException("Teacher accounts require admin approval. Register as a student and contact an administrator.");
         }
         if (role == null) {
             role = Role.STUDENT;
@@ -171,9 +174,10 @@ public class AuthService {
      * Returns the token (in production, send via email instead).
      */
     public String forgotPassword(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
-        return passwordResetService.generateResetToken(user.getEmail());
+        // Never reveal whether an email exists — return null silently if not found
+        return userRepository.findByEmail(email)
+                .map(user -> passwordResetService.generateResetToken(user.getEmail()))
+                .orElse(null);
     }
 
     /**

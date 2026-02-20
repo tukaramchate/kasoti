@@ -17,17 +17,22 @@ A full-stack quiz management platform built with **Spring Boot** and **React**. 
 - Role-based access control (Admin, Teacher, Student)
 - Password hashing with BCrypt
 - Login attempt rate limiting & account lockout
-- Password reset functionality
+- Password reset functionality (secure — token not exposed in response)
+- JWT secret validation at startup (minimum 256-bit key)
+- IDOR protection on dashboard endpoints
+- CSV formula injection prevention in exports
 
 ### Quiz Management (Teachers)
-- Create quizzes with multiple-choice questions
+- Create quizzes with multiple question types (MCQ, MSQ, True/False, Descriptive)
 - Edit and delete quizzes
 - Publish quizzes with shareable links
 - View student attempts and scores
+- Export quiz data (JSON) and attempt reports (CSV)
+- Evaluate descriptive answers manually
 - Close quizzes to prevent new attempts
 
 ### Taking Quizzes (Students)
-- Attempt published quizzes
+- Attempt published quizzes with multiple question types
 - Time tracking for attempts
 - View scores and results immediately
 - Quiz history on profile page

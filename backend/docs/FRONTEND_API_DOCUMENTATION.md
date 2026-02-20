@@ -122,12 +122,11 @@ POST /api/auth/forgot-password
 **Response:**
 ```json
 {
-  "message": "Password reset token generated. In production, check your email.",
-  "token": "abc123xyz"
+  "message": "If the email exists, a password reset link has been sent."
 }
 ```
 
-> ⚠️ **Development Mode:** Token is returned in response for testing. In production, it would be sent via email.
+> 🔒 **Security:** The response is intentionally vague to prevent email enumeration. The reset token is logged server-side only and is never exposed in the HTTP response.
 
 ---
 
@@ -203,7 +202,9 @@ GET /api/quizzes?page=0&size=10&search=java&category=Programming
 GET /api/quizzes/{id}
 ```
 
-**Response:** Full `QuizDTO` with questions array
+> ⚠️ **Availability check:** Quiz must be published and within its time window (if `startTime`/`endTime` are set). Returns `400 Bad Request` if the quiz is not currently available.
+
+**Response:** Full `QuizDTO` with questions array (see [QuizDTO model](#quizdto-detail-endpoints))
 
 ---
 
@@ -274,15 +275,23 @@ POST /api/quizzes/{id}/submit
 ```json
 {
   "answers": {
-    "1": "A",
-    "2": "B",
-    "3": "C"
+    "1": "Language",
+    "3": "TRUE"
+  },
+  "multiAnswers": {
+    "2": ["Encapsulation", "Inheritance"]
+  },
+  "textAnswers": {
+    "4": "The JVM consists of class loader, runtime data areas, and execution engine."
   },
   "timeTakenSeconds": 300
 }
 ```
 
-> `answers` is a map of `questionId` → `selectedOption` (A/B/C/D)
+> **Multi-type submission:**
+> - `answers` — Map of `questionId` → `selectedOption` (for MCQ and TRUE_FALSE questions)
+> - `multiAnswers` — Map of `questionId` → `selectedOptions[]` (for MSQ questions)
+> - `textAnswers` — Map of `questionId` → `textAnswer` (for DESCRIPTIVE questions)
 
 **Response:**
 ```json
@@ -298,6 +307,9 @@ POST /api/quizzes/{id}/submit
   "passed": true,
   "message": "Quiz completed successfully!"
 }
+```
+
+> 📝 **Descriptive Questions:** When a quiz contains DESCRIPTIVE questions, the `passed` field may be `null` until all descriptive answers are evaluated by the teacher. The `message` will indicate "Results pending evaluation".
 ```
 
 #### ⚠️ Attempt Constraints
@@ -338,12 +350,16 @@ GET /api/quizzes/my
 POST /api/quizzes
 ```
 
-**Request Body:**
+> 🔒 **Security:** Uses `CreateQuizRequest` DTO — clients cannot set `id`, `createdBy`, `status`, or `shareCode`. These are controlled server-side.
+
+**Request Body (`CreateQuizRequest`):**
 ```json
 {
   "title": "Java Advanced",
   "description": "Advanced Java concepts",
   "category": "Programming",
+  "difficulty": "HARD",
+  "tags": "java,oop,advanced",
   "timeLimitMinutes": 30,
   "negativeMarking": false,
   "shuffleQuestions": true,
@@ -354,31 +370,67 @@ POST /api/quizzes
   "questions": [
     {
       "text": "What is polymorphism?",
-      "optionA": "Many forms",
-      "optionB": "Single form",
-      "optionC": "No form",
-      "optionD": "All forms",
-      "correctAnswer": "A",
+      "questionType": "MCQ",
+      "options": ["Many forms", "Single form", "No form", "All forms"],
+      "correctOption": "Many forms",
       "marks": 10
+    },
+    {
+      "text": "Which are OOP principles? (select all)",
+      "questionType": "MSQ",
+      "options": ["Encapsulation", "Recursion", "Inheritance", "Polymorphism"],
+      "correctOptions": ["Encapsulation", "Inheritance", "Polymorphism"],
+      "marks": 15
+    },
+    {
+      "text": "Java is a compiled language.",
+      "questionType": "TRUE_FALSE",
+      "correctOption": "TRUE",
+      "marks": 5
+    },
+    {
+      "text": "Explain the SOLID principles.",
+      "questionType": "DESCRIPTIVE",
+      "modelAnswer": "SOLID stands for...",
+      "keywords": "single responsibility,open closed,liskov,interface segregation,dependency inversion",
+      "marks": 20
     }
   ]
 }
 ```
 
-#### Quiz Settings (All Optional)
+#### Request Fields
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `timeLimitMinutes` | Integer | null | Time limit in minutes (null = no limit) |
-| `negativeMarking` | Boolean | false | Penalty for wrong answers |
-| `shuffleQuestions` | Boolean | false | Randomize question order per student |
-| `shuffleOptions` | Boolean | false | Randomize answer options |
-| `passPercentage` | Integer | null | Min % to pass (null = no threshold) |
-| `startTime` | DateTime | null | When quiz becomes available |
-| `endTime` | DateTime | null | When quiz closes |
-| `status` | Enum | DRAFT | Initial status (DRAFT/PUBLISHED/CLOSED) |
+| Field | Type | Required | Validation | Description |
+|-------|------|----------|------------|-------------|
+| `title` | String | ✅ | `@NotBlank`, max 255 chars | Quiz title |
+| `description` | String | No | max 2000 chars | Quiz description |
+| `category` | String | No | — | Quiz category |
+| `difficulty` | String | No | max 10 chars | `EASY`, `MEDIUM`, or `HARD` |
+| `tags` | String | No | max 500 chars | Comma-separated tags |
+| `timeLimitMinutes` | Integer | No | min 1 | Time limit in minutes (null = no limit) |
+| `negativeMarking` | Boolean | No | — | Penalty for wrong answers (default: false) |
+| `shuffleQuestions` | Boolean | No | — | Randomize question order (default: false) |
+| `shuffleOptions` | Boolean | No | — | Randomize answer options (default: false) |
+| `passPercentage` | Integer | No | 0–100 | Min % to pass (null = no threshold) |
+| `startTime` | DateTime | No | — | When quiz becomes available |
+| `endTime` | DateTime | No | — | When quiz closes |
+| `questions` | Array | No | `@Valid` | List of question objects |
 
-**Response (201 Created):** Full quiz object with generated ID and status `DRAFT`
+#### Question Fields (`QuestionRequest`)
+
+| Field | Type | Required | Validation | Used By |
+|-------|------|----------|------------|----------|
+| `text` | String | ✅ | `@NotBlank` | All types |
+| `questionType` | String | No | — | MCQ (default), MSQ, TRUE_FALSE, DESCRIPTIVE |
+| `options` | List\<String\> | No | — | MCQ, MSQ |
+| `correctOption` | String | No | — | MCQ, TRUE_FALSE |
+| `correctOptions` | List\<String\> | No | — | MSQ |
+| `modelAnswer` | String | No | — | DESCRIPTIVE |
+| `keywords` | String | No | max 1000 chars | DESCRIPTIVE (comma-separated) |
+| `marks` | Integer | No | min 1 | All types (default: 1) |
+
+**Response (201 Created):** Full quiz object with generated ID, `status: DRAFT`, and `shareCode: null`
 
 ---
 
@@ -387,9 +439,11 @@ POST /api/quizzes
 PUT /api/quizzes/{id}
 ```
 
-**Request Body:** Same structure as create quiz
+**Request Body:** Same `CreateQuizRequest` structure as create quiz.
 
 > ⚠️ Teachers can only update their own quizzes. Admins can update any quiz.
+> 
+> 🔒 Fields `id`, `createdBy`, `status`, and `shareCode` cannot be modified through this endpoint.
 
 ---
 
@@ -450,6 +504,59 @@ GET /api/quizzes/{id}/students?sort=score_desc
 - `attemptedAt_desc` - Most recent attempts first
 
 **Response:** Array of quiz attempt objects with user info.
+
+---
+
+### Get Pending Evaluations 🔒 (Teacher/Admin)
+```
+GET /api/quizzes/{id}/pending-evaluations
+```
+
+Returns all quiz attempts containing DESCRIPTIVE questions that have not yet been evaluated.
+
+**Response:** Array of attempt objects with answers that need evaluation. Each answer includes `id`, `questionText`, `textAnswer`, `evaluationStatus`.
+
+---
+
+### Evaluate Answer 🔒 (Teacher/Admin)
+```
+PUT /api/quizzes/answers/{answerId}/evaluate
+```
+
+**Request Body:**
+```json
+{
+  "marks": 15,
+  "comment": "Good explanation but missed key points"
+}
+```
+
+> 📝 **Note:** The `answerId` is the `id` field from the `AnswerDTO` object. `marks` must be between 0 and the question's `maxMarks`.
+
+**Response:** Updated answer object with evaluation details.
+
+---
+
+### Export Quiz 🔒 (Teacher/Admin)
+```
+GET /api/quizzes/{id}/export
+```
+
+**Response:** JSON file download (blob) containing the full quiz with questions.
+
+---
+
+### Export Attempts 🔒 (Teacher/Admin)
+```
+GET /api/quizzes/{id}/attempts/export
+```
+
+**Response:** CSV file download (blob) with columns:
+```
+Student Name, Student Email, Marks Obtained, Total Marks, Percentage, Submitted At, Time Taken (minutes)
+```
+
+> 🔒 **Security:** CSV values are protected against formula injection attacks.
 
 ---
 
@@ -575,6 +682,8 @@ GET /api/dashboard/quizzes?page=0&size=10
 GET /api/dashboard/quizzes/{id}/stats
 ```
 
+> 🔒 **Ownership check:** Teachers can only view statistics for their own quizzes. Admins can view stats for any quiz.
+
 **Response:**
 ```json
 {
@@ -651,6 +760,8 @@ DELETE /api/admin/users/{id}
 ```
 
 **Response:** 204 No Content
+
+> ⚠️ **Self-deletion prevention:** Admins cannot delete their own account. Attempting to do so returns a 400 error.
 
 ---
 
@@ -793,28 +904,56 @@ Full DTO with questions array:
 {
   "id": 1,
   "title": "Java Basics",
+  "description": "Test your Java knowledge",
+  "username": "teacher1",
   "category": "Programming",
-  "status": "PUBLISHED",
+  "difficulty": "MEDIUM",
+  "tags": "java,basics,programming",
   "shareCode": "ABC12345",
   "timeLimitMinutes": 30,
+  "passPercentage": 60,
   "negativeMarking": false,
   "shuffleQuestions": true,
   "shuffleOptions": true,
-  "passPercentage": 60,
+  "startTime": "2026-02-10T10:00:00",
+  "endTime": "2026-02-10T12:00:00",
+  "totalMarks": 50,
   "questions": [
     {
       "id": 1,
       "text": "What is Java?",
-      "optionA": "Language",
-      "optionB": "Framework",
-      "optionC": "Database",
-      "optionD": "OS",
-      "correctAnswer": "A",
+      "questionType": "MCQ",
+      "options": ["Language", "Framework", "Database", "OS"],
+      "correctOption": "Language",
       "marks": 5
+    },
+    {
+      "id": 2,
+      "text": "Select all OOP concepts",
+      "questionType": "MSQ",
+      "options": ["Encapsulation", "Recursion", "Inheritance"],
+      "correctOptions": ["Encapsulation", "Inheritance"],
+      "marks": 10
+    },
+    {
+      "id": 3,
+      "text": "Java is platform-independent.",
+      "questionType": "TRUE_FALSE",
+      "correctOption": "TRUE",
+      "marks": 5
+    },
+    {
+      "id": 4,
+      "text": "Explain JVM architecture.",
+      "questionType": "DESCRIPTIVE",
+      "modelAnswer": "The JVM consists of...",
+      "marks": 20
     }
   ]
 }
 ```
+
+> 📝 **Question Types:** Questions can be `MCQ` (single-choice), `MSQ` (multi-select), `TRUE_FALSE`, or `DESCRIPTIVE` (free-text, requires manual evaluation).
 
 ---
 
@@ -860,9 +999,10 @@ Full DTO with questions array:
 ```json
 {
   "status": 403,
-  "error": "Forbidden",
-  "message": "You have already attempted this quiz"
+  "error": "ACCESS_DENIED",
+  "message": "You do not have permission to perform this action"
 }
+```
 ```
 
 **423 Locked (Account Lockout):**
@@ -878,13 +1018,18 @@ Full DTO with questions array:
 
 ## Notes
 
-- **Authentication:** Most endpoints require JWT token except `/api/auth/**`, `/api/health/**`, `/api/public/**`, and `GET /api/quizzes/share/{shareCode}`
-- **Pagination:** Default page size is 10-20 depending on endpoint
-- **Quiz Visibility:** Students only see `PUBLISHED` quizzes within time window
-- **Performance:** Quiz list endpoints use lightweight DTOs without questions
-- **Security:** Rate limiting on auth endpoints, account lockout after 5 failed login attempts
+- **Authentication:** Most endpoints require JWT token except `/api/auth/**`, `/api/health/**`, `/api/public/**`, and public GET routes (`/api/quizzes`, `/api/quizzes/{id}`, `/api/quizzes/share/**`, `/api/quizzes/{id}/leaderboard`)
+- **Security Rule Ordering:** Teacher/admin-restricted GET routes (`/my`, `/students`, `/pending-evaluations`, `/export`) are matched BEFORE the public `GET /api/quizzes/**` permitAll routes
+- **Pagination:** Default page size is 10–20 depending on endpoint
+- **Quiz Visibility:** Students only see `PUBLISHED` quizzes within time window. Unpublished/expired quizzes return 400
+- **Performance:** Quiz list endpoints use lightweight `QuizSummaryDTO` without questions. Individual quiz fetch uses `@EntityGraph` for eager loading
+- **Security:** Rate limiting on auth endpoints, account lockout after 5 failed login attempts, JWT secret validated at startup (minimum 256-bit key)
+- **Question Types:** `MCQ` (single-choice), `MSQ` (multi-select), `TRUE_FALSE`, `DESCRIPTIVE` (requires manual teacher evaluation)
+- **CSV Export:** Columns are `Student Name, Student Email, Marks Obtained, Total Marks, Percentage, Submitted At, Time Taken (minutes)`. Values are protected against CSV formula injection
+- **IDOR Protection:** Dashboard quiz stats enforce ownership check. Admin self-deletion is prevented
+- **Memory Management:** Rate limiter auto-cleans stale entries every 100 requests
 
 ---
 
-**Version:** 1.0.0  
-**Last Updated:** February 10, 2026
+**Version:** 2.0.0  
+**Last Updated:** February 13, 2026

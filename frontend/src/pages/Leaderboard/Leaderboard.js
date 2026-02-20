@@ -62,7 +62,7 @@ const Leaderboard = () => {
     return (
         <div className="min-h-screen bg-[color:var(--bg-primary)] p-6 max-sm:p-4">
             <div className="max-w-[760px] mx-auto">
-                <PageHeader title="Back to Home" />
+                <PageHeader title="Leaderboard" />
 
                 <div className="bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-2xl overflow-hidden">
                     <div className="p-7 text-center border-b border-[color:var(--border)] max-sm:p-5">

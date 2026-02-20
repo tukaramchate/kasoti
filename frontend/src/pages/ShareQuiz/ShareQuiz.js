@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { quizAPI } from "../../api";
 import { UserContext } from "../../context/UserContext";
 import { FiClock, FiUser, FiBookOpen } from "react-icons/fi";
@@ -32,7 +32,7 @@ const ShareQuiz = () => {
         if (user && quiz) {
             navigate(`/quiz/${quiz.id}`);
         } else {
-            navigate(`/?redirect=/quiz/${quiz?.id}`);
+            navigate(`/login?redirect=/quiz/${quiz?.id}`);
         }
     };
 
@@ -65,7 +65,7 @@ const ShareQuiz = () => {
         <div className="min-h-screen flex items-center justify-center bg-[color:var(--bg-primary)] p-6">
             <div className="w-full max-w-md bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-2xl p-8">
                 <div className="text-center mb-6">
-                    <img src="/assets/kasoti-logo.png" alt="Kasoti" className="h-10 mx-auto" />
+                    <img src="/assets/kasoti-logo.png" alt="Kasoti" className="h-10 mx-auto" onError={(e) => { e.target.style.display = 'none'; }} />
                 </div>
 
                 <h1 className="text-xl font-bold text-[color:var(--text-primary)] text-center mb-2">{quiz?.title}</h1>
@@ -101,7 +101,7 @@ const ShareQuiz = () => {
 
                 {!user && (
                     <div className="text-center mt-6 text-sm text-[color:var(--text-secondary)]">
-                        Don't have an account? <a href="/register" className="text-[color:var(--accent)] hover:underline">Create one</a>
+                        Don't have an account? <Link to="/register" className="text-[color:var(--accent)] hover:underline">Create one</Link>
                     </div>
                 )}
             </div>

@@ -22,23 +22,37 @@ const EditQuiz = () => {
                 title: quiz.title || "",
                 description: quiz.description || "",
                 category: quiz.category || "General",
+                difficulty: quiz.difficulty || "",
+                tags: quiz.tags || "",
                 status: quiz.status || "DRAFT",
-                timeLimitMinutes: quiz.timeLimitMinutes || "",
+                timeLimitMinutes: quiz.timeLimitMinutes != null ? quiz.timeLimitMinutes : "",
                 negativeMarking: quiz.negativeMarking || false,
                 shuffleQuestions: quiz.shuffleQuestions || false,
                 shuffleOptions: quiz.shuffleOptions || false,
-                passPercentage: quiz.passPercentage || "",
+                passPercentage: quiz.passPercentage != null ? quiz.passPercentage : "",
                 startTime: quiz.startTime || "",
                 endTime: quiz.endTime || "",
                 questions: quiz.questions?.length
                     ? quiz.questions.map((q) => ({
                         id: q.id,
                         text: q.text || "",
+                        questionType: q.questionType || "MCQ",
                         optionA: q.options?.[0] || "",
                         optionB: q.options?.[1] || "",
                         optionC: q.options?.[2] || "",
                         optionD: q.options?.[3] || "",
-                        correctAnswer: q.correctOption || "A",
+                        correctAnswer: (() => {
+                            if (q.questionType === 'TRUE_FALSE') return q.correctOption || 'True';
+                            // MCQ: convert option text to letter (A/B/C/D)
+                            const idx = (q.options || []).indexOf(q.correctOption);
+                            return idx >= 0 ? ["A", "B", "C", "D"][idx] : "A";
+                        })(),
+                        correctOptions: (q.correctOptions || []).map(text => {
+                            const idx = (q.options || []).indexOf(text);
+                            return idx >= 0 ? ["A", "B", "C", "D"][idx] : text;
+                        }),
+                        modelAnswer: q.modelAnswer || "",
+                        keywords: q.keywords || "",
                         marks: q.marks || 1,
                     }))
                     : undefined,

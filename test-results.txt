@@ -1,0 +1,124 @@
+﻿
+========================================
+  NEW FEATURES TEST SUITE
+========================================
+
+--- SETUP ---
+  Student registered: stu90765 (token 216 chars)
+  Teacher promoted: tch90765 (token 216 chars)
+
+--- 1. CATEGORIES & TAGS ---
+  GET /categories => 200 ["General","Science"]
+  GET /categories/tags => 200 ["ff","multi-type","science","test"]
+
+--- 2. CREATE MULTI-TYPE QUIZ ---
+  POST create multi-type quiz => 201 {"id":41,"title":"Multi-Type Quiz 90765","description":"Testing all 4 question types","createdBy":{"id":94,"name":null,"username":"tch90765","email":"tch90765@t.com","phone":null,"role":"TEACHER","cre...
+  -> Quiz ID: 41
+
+--- 3. VALIDATE QUIZ DETAILS ---
+  GET quiz (teacher view) => 200 [{"id":41,"title":"Multi-Type Quiz 90765","description":"Testing all 4 question types","createdBy":{"id":94,"name":null,"username":"tch90765","email":"tch90765@t.com","phone":null,"role":"TEACHER","cr...
+  -> Found in /my list. Questions: 4
+
+--- 4. PUBLISH QUIZ ---
+  POST publish quiz => 200 {"quizId":41,"title":"Multi-Type Quiz 90765","shareCode":"4TNLNAJU","shareUrl":"/api/quizzes/share/4TNLNAJU"}
+  -> Share code: 4TNLNAJU
+
+--- 5. STUDENT QUIZ VIEW ---
+  GET quiz (student DTO) => 200 {"id":41,"title":"Multi-Type Quiz 90765","description":"Testing all 4 question types","username":"tch90765","category":"Science","difficulty":"MEDIUM","tags":"test,multi-type,science","shareCode":"4TN...
+    Q: MCQ: What is 2+2? | type=MCQ | opts=4 | correct=OK-hidden
+    Q: MSQ: Select all prime numbers | type=MSQ | opts=5 | correct=OK-hidden
+    Q: TRUE_FALSE: The Earth is flat | type=TRUE_FALSE | opts=2 | correct=OK-hidden
+    Q: DESCRIPTIVE: Explain photosynthesis | type=DESCRIPTIVE | opts=0 | correct=OK-hidden
+
+--- 6. QUESTION VALIDATION ---
+  MCQ: correctOption not in options => 400 {"status":400,"error":"BAD_REQUEST","message":"Question 1 (MCQ): correctOption 'D' must be one of the provided options","timestamp":"2026-02-20T16:13:39.908124","fieldErrors":null}
+  MSQ: missing correctOptions => 400 {"status":400,"error":"BAD_REQUEST","message":"Question 1 (MSQ): correctOptions list is required (at least 1)","timestamp":"2026-02-20T16:13:39.9317681","fieldErrors":null}
+  MSQ: all options correct => 400 {"status":400,"error":"BAD_REQUEST","message":"Question 1 (MSQ): correctOptions cannot include all options - use MCQ if there's only one correct answer","timestamp":"2026-02-20T16:13:39.9397434","fiel...
+  TRUE_FALSE: options not True/False => 400 {"status":400,"error":"BAD_REQUEST","message":"Question 1 (TRUE_FALSE): options must be exactly 'True' and 'False'","timestamp":"2026-02-20T16:13:39.947722","fieldErrors":null}
+  DESCRIPTIVE: has options (should fail) => 400 {"status":400,"error":"BAD_REQUEST","message":"Question 1 (DESCRIPTIVE): DESCRIPTIVE questions must not have options","timestamp":"2026-02-20T16:13:39.9566574","fieldErrors":null}
+  DESCRIPTIVE: valid (no options) => 201 {"id":42,"title":"Good DESC 90765","description":"test","createdBy":{"id":94,"name":null,"username":"tch90765","email":"tch90765@t.com","phone":null,"role":"TEACHER","createdAt":"2026-02-20T16:13:39.3...
+  WARN: Delete draft quiz 42 => 500
+
+--- 7. SUBMIT MULTI-TYPE QUIZ ---
+  Questions: MCQ=110 MSQ=111 TF=112 DESC=113
+  Submit body: {"answers":{"110":"4","112":"False"},"multiAnswers":{"111":["2","3"]},"textAnswers":{"113":"Photosynthesis is the biological process where plants use sunlight to produce glucose from carbon dioxide and water."},"timeTakenSeconds":120}
+  POST submit multi-type quiz => 200 {"quizId":41,"quizTitle":"Multi-Type Quiz 90765","score":45,"totalQuestions":4,"correctAnswers":2,"marksObtained":5,"totalMarks":11,"passed":null,"percentage":45.45454545454545,"timeTakenSeconds":120,...
+  -> Score: 45% | Correct: 2/4
+  -> Marks: 5/11 | Passed: 
+    -> Q:110 type=MCQ correct=True marks=2/2 eval=AUTO_GRADED
+    -> Q:111 type=MSQ correct=False marks=2/3 eval=AUTO_GRADED
+    -> Q:112 type=TRUE_FALSE correct=True marks=1/1 eval=AUTO_GRADED
+    -> Q:113 type=DESCRIPTIVE correct= marks=0/5 eval=PENDING
+
+--- 8. PENDING EVALUATIONS ---
+  GET pending-evaluations => 200 [{"id":13,"questionId":113,"questionText":"DESCRIPTIVE: Explain photosynthesis","questionType":"DESCRIPTIVE","selectedOption":null,"correctOption":null,"selectedOptions":[],"correctOptions":[],"textAn...
+  -> Pending answer ID: 13, maxMarks: 5
+  -> Student answer: Photosynthesis is the biological process where plants use sunlight to produce glucose from carbon dioxide and water.
+  -> Model answer: Photosynthesis is the process by which plants convert sunlight into energy
+
+--- 9. EVALUATE DESCRIPTIVE ANSWER ---
+  PUT evaluate answer => 200 {"id":13,"questionId":113,"questionText":"DESCRIPTIVE: Explain photosynthesis","questionType":"DESCRIPTIVE","selectedOption":null,"correctOption":null,"selectedOptions":[],"correctOptions":[],"textAns...
+  -> Evaluated: marks=4/5 status=EVALUATED
+  GET pending (after eval) => 200 []
+  -> Remaining pending: 0
+
+--- 10. VERIFY SCORE AFTER EVALUATION ---
+  GET leaderboard (after eval) => 200 [{"attemptId":7,"username":"stu90765","score":82,"marksObtained":9,"totalMarks":11,"correctAnswers":3,"totalQuestions":4,"timeTakenSeconds":120,"attemptedAt":"2026-02-20T16:13:40.150488"}]
+  -> Updated score: 82% marks: 9/11
+
+--- 11. EVALUATION EDGE CASES ---
+  PUT eval: marks > max => 400 {"status":400,"error":"BAD_REQUEST","message":"Marks must be between 0 and 5 for this question","timestamp":"2026-02-20T16:13:40.3413997","fieldErrors":null}
+  PUT eval: marks < 0 => 400 {"status":400,"error":"VALIDATION_ERROR","message":"Validation failed","timestamp":"2026-02-20T16:13:40.3557573","fieldErrors":{"marks":"Marks cannot be negative"}}
+  PUT eval: non-existent answer => 404 {"status":404,"error":"NOT_FOUND","message":"Answer not found with id: '999999'","timestamp":"2026-02-20T16:13:40.366082","fieldErrors":null}
+  PUT eval: student forbidden => 401 
+
+--- 12. FORGOT PASSWORD ---
+  POST forgot-password (valid email) => 200 {"message":"If the email exists, a password reset link has been sent."}
+  POST forgot-password (unknown email) => 200 {"message":"If the email exists, a password reset link has been sent."}
+  POST forgot-password (empty) => 400 {"status":400,"error":"VALIDATION_ERROR","message":"Validation failed","timestamp":"2026-02-20T16:13:40.4236931","fieldErrors":{"email":"Email is required"}}
+  POST reset-password (bad token) => 400 {"status":400,"error":"BAD_REQUEST","message":"Invalid or expired reset token","timestamp":"2026-02-20T16:13:40.4326705","fieldErrors":null}
+
+--- 13. TAGS FILTERING ---
+  GET quizzes with tag filter => 200 {"content":[{"id":41,"title":"Multi-Type Quiz 90765","description":"Testing all 4 question types","category":"Science","status":"PUBLISHED","creatorUsername":"tch90765","questionCount":4,"totalMarks":...
+  -> Results: 2 quizzes with tag 'test'
+  GET quizzes with nonexistent tag => 200 {"content":[],"pageable":{"pageNumber":0,"pageSize":10,"sort":{"empty":false,"sorted":true,"unsorted":false},"offset":0,"paged":true,"unpaged":false},"last":true,"totalPages":0,"totalElements":0,"size...
+  -> Results: 0 quizzes with nonexistent tag
+
+--- 14. QuestionDTO FIELD VALIDATION ---
+  GET quiz DTO fields => 200 {"id":41,"title":"Multi-Type Quiz 90765","description":"Testing all 4 question types","username":"tch90765","category":"Science","difficulty":"MEDIUM","tags":"test,multi-type,science","shareCode":"4TN...
+  -> questionType present: True
+  -> marks present: True
+  -> correctOption hidden: True
+
+--- 15. QuizDTO EXTENDED FIELDS ---
+  -> id : 41
+  -> title : Multi-Type Quiz 90765
+  -> description : Testing all 4 question types
+  -> difficulty : MEDIUM
+  -> tags : test,multi-type,science
+  -> shareCode : 4TNLNAJU
+  -> timeLimitMinutes : 30
+  -> passPercentage : 50
+  -> totalMarks : 11
+
+--- 16. REGISTER AUTO-LOGIN ---
+  POST register (auto-login) => 201 {"token":"eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhdXRvNTEzNzQiLCJ1c2VySWQiOjk1LCJyb2xlIjoiU1RVREVOVCIsImlhdCI6MTc3MTU4NDIyMCwiZXhwIjoxNzcxNjcwNjIwfQ.DjwT0AGzhi1H6rvZRYVRdk1WxVnPf03WtHqanLWUwA2j3jdy_YuY0CJ4ZY...
+  -> Token returned: YES (auto-login works)
+  -> User: auto51374 role=STUDENT
+
+--- 17. LOGIN REDIRECT (frontend feature, API unaffected) ---
+  -> Login now supports ?redirect= param (frontend-only)
+
+--- 18. SHARE QUIZ ---
+  GET share code => 200 {"id":41,"title":"Multi-Type Quiz 90765","description":"Testing all 4 question types","username":"tch90765","category":"Science","difficulty":"MEDIUM","tags":"test,multi-type,science","shareCode":"4TN...
+  -> Quiz title: Multi-Type Quiz 90765
+
+--- CLEANUP ---
+  POST close quiz => 200 {"id":41,"title":"Multi-Type Quiz 90765","description":"Testing all 4 question types","createdBy":{"id":94,"name":null,"username":"tch90765","email":"tch90765@t.com","phone":null,"role":"TEACHER","cre...
+  DELETE quiz => 500 {"status":500,"error":"INTERNAL_SERVER_ERROR","message":"An unexpected error occurred","timestamp":"2026-02-20T16:13:40.7356801","fieldErrors":null}
+
+========================================
+  RESULTS SUMMARY
+========================================
+  Total: 32 | 2xx: 20 | 4xx: 11 | 5xx: 
+

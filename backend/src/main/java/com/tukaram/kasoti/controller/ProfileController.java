@@ -1,9 +1,9 @@
 package com.tukaram.kasoti.controller;
 
+import com.tukaram.kasoti.dto.AttemptSummaryDTO;
 import com.tukaram.kasoti.dto.ChangePasswordRequest;
 import com.tukaram.kasoti.dto.ProfileUpdateRequest;
 import com.tukaram.kasoti.dto.UserDTO;
-import com.tukaram.kasoti.model.QuizAttempt;
 import com.tukaram.kasoti.security.UserPrincipal;
 import com.tukaram.kasoti.service.AuthService;
 import com.tukaram.kasoti.service.QuizService;
@@ -59,13 +59,13 @@ public class ProfileController {
     }
 
     @GetMapping("/attempts")
-    public ResponseEntity<List<QuizAttempt>> getMyAttempts(
+    public ResponseEntity<List<AttemptSummaryDTO>> getMyAttempts(
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(quizService.getUserAttempts(principal.getId()));
     }
 
     @GetMapping("/attempts/paginated")
-    public ResponseEntity<Page<QuizAttempt>> getMyAttemptsPaginated(
+    public ResponseEntity<Page<AttemptSummaryDTO>> getMyAttemptsPaginated(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {

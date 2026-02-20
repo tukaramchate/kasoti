@@ -41,10 +41,8 @@ const Profile = () => {
             const profileRes = await profileAPI.getProfile();
             const profileData = profileRes.data;
 
-            // Update context with fresh data
-            const updatedUser = { ...user, user: { ...currentUser, ...profileData } };
-            setUser(updatedUser);
-            localStorage.setItem("user", JSON.stringify(updatedUser));
+            // Update context with fresh data using functional update to avoid stale closure
+            setUser(prev => ({ ...prev, user: { ...prev?.user, ...profileData } }));
 
             if (isTeacher) {
                 const response = await quizAPI.getMyQuizzes();
@@ -65,8 +63,7 @@ const Profile = () => {
         } finally {
             setLoading(false);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isTeacher, attemptPage]);
+    }, [isTeacher, attemptPage, setUser]);
 
     useEffect(() => {
         fetchProfileData();
@@ -104,7 +101,6 @@ const Profile = () => {
             // Update context with new data
             const updatedUser = { ...user, user: { ...currentUser, ...response.data } };
             setUser(updatedUser);
-            localStorage.setItem("user", JSON.stringify(updatedUser));
 
             setEditing(false);
             toast.success("Profile updated successfully");

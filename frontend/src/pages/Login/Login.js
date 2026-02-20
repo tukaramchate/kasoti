@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { authAPI } from "../../api";
 import { toast } from "react-toastify";
 import { useAuth } from "../../context/UserContext";
@@ -8,6 +8,8 @@ import PasswordInput from "../../components/PasswordInput";
 const Login = () => {
   const { setUser } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('redirect');
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -36,9 +38,8 @@ const Login = () => {
         user: response.data.user,
       };
       setUser(userData);
-      localStorage.setItem("user", JSON.stringify(userData));
       toast.success("Login successful!");
-      navigate("/home");
+      navigate(redirectTo || "/home");
     } catch (error) {
       if (error.response) {
         if (error.response.status === 401) {

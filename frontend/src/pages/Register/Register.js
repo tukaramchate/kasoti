@@ -2,10 +2,12 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authAPI } from "../../api";
 import { toast } from "react-toastify";
+import { useAuth } from "../../context/UserContext";
 import PasswordInput from "../../components/PasswordInput";
 
 const Register = () => {
   const navigate = useNavigate();
+  const { setUser } = useAuth();
   const [formData, setFormData] = useState({
     fullName: "",
     username: "",
@@ -13,7 +15,6 @@ const Register = () => {
     phone: "",
     password: "",
   });
-  const [role, setRole] = useState("STUDENT");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -34,16 +35,28 @@ const Register = () => {
 
     setLoading(true);
     try {
-      await authAPI.register({
-        fullName: formData.fullName,
+      const response = await authAPI.register({
+        name: formData.fullName,
         username: formData.username,
         email: formData.email,
         phone: formData.phone || null,
         password: formData.password,
-        role: role,
+        role: "STUDENT",
       });
-      toast.success("Registration successful! Please sign in.");
-      navigate("/login");
+
+      // Auto-login if backend returns token
+      if (response.data?.token) {
+        const userData = {
+          token: response.data.token,
+          user: response.data.user,
+        };
+        setUser(userData);
+        toast.success("Registration successful! Welcome! 🎉");
+        navigate("/home");
+      } else {
+        toast.success("Registration successful! Please sign in.");
+        navigate("/login");
+      }
     } catch (error) {
       if (error.response) {
         if (error.response.data?.errors) {
@@ -135,31 +148,9 @@ const Register = () => {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-medium text-[color:var(--text-primary)]">I am a...</label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className={`flex-1 py-2.5 border rounded font-medium text-sm transition-all duration-150 ${
-                  role === "STUDENT"
-                    ? "bg-[color:var(--accent)] text-white border-[color:var(--accent)]"
-                    : "bg-transparent text-[color:var(--text-secondary)] border-[color:var(--border)] hover:border-[color:var(--accent)]"
-                }`}
-                onClick={() => setRole("STUDENT")}
-              >
-                Student
-              </button>
-              <button
-                type="button"
-                className={`flex-1 py-2.5 border rounded font-medium text-sm transition-all duration-150 ${
-                  role === "TEACHER"
-                    ? "bg-[color:var(--accent)] text-white border-[color:var(--accent)]"
-                    : "bg-transparent text-[color:var(--text-secondary)] border-[color:var(--border)] hover:border-[color:var(--accent)]"
-                }`}
-                onClick={() => setRole("TEACHER")}
-              >
-                Teacher
-              </button>
-            </div>
+            <p className="text-xs text-[color:var(--text-muted)]">
+              Registering as a <span className="font-semibold text-[color:var(--text-primary)]">Student</span>. Need a teacher account? Contact your administrator.
+            </p>
           </div>
 
           <button type="submit" className={buttonStyles} disabled={loading}>

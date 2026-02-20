@@ -8,6 +8,7 @@ import com.tukaram.kasoti.dto.RegisterRequest;
 import com.tukaram.kasoti.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -38,9 +40,10 @@ public class AuthController {
     public ResponseEntity<Map<String, String>> forgotPassword(
             @Valid @RequestBody PasswordResetRequest request) {
         String token = authService.forgotPassword(request.getEmail());
+        // SECURITY: Never expose token to client. In production, send via email.
+        log.info("Password reset token generated for email: {}. Token (dev only): {}", request.getEmail(), token);
         return ResponseEntity.ok(Map.of(
-                "message", "Password reset token generated. In production, check your email.",
-                "token", token));
+                "message", "If the email exists, a password reset link has been sent."));
     }
 
     @PostMapping("/reset-password")

@@ -2,6 +2,7 @@ package com.tukaram.kasoti.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -9,7 +10,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,6 +40,7 @@ public class Quiz {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler", "password" })
+    @ToString.Exclude
     private User createdBy;
 
     @Column
@@ -104,6 +108,8 @@ public class Quiz {
      * Minimum percentage required to pass the quiz.
      * Null means no pass/fail threshold.
      */
+    @Min(value = 0, message = "Pass percentage cannot be negative")
+    @Max(value = 100, message = "Pass percentage cannot exceed 100")
     @Column(name = "pass_percentage")
     private Integer passPercentage;
 
@@ -124,6 +130,10 @@ public class Quiz {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "quiz_id")

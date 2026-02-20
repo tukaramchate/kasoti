@@ -11,6 +11,8 @@ const Dashboard = () => {
   const [recentAttempts, setRecentAttempts] = useState([]);
   const [quizStats, setQuizStats] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedQuizStats, setSelectedQuizStats] = useState(null);
+  const [statsModalLoading, setStatsModalLoading] = useState(false);
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -36,6 +38,18 @@ const Dashboard = () => {
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
+
+  const handleViewQuizStats = async (quizId) => {
+    setStatsModalLoading(true);
+    try {
+      const res = await dashboardAPI.getQuizStats(quizId);
+      setSelectedQuizStats(res.data);
+    } catch (error) {
+      toast.error("Failed to load quiz stats");
+    } finally {
+      setStatsModalLoading(false);
+    }
+  };
 
   const formatTime = (seconds) => {
     if (!seconds) return "-";
@@ -183,12 +197,20 @@ const Dashboard = () => {
                       </td>
                       <td className="py-3 px-3 border-b border-[color:var(--border-light)] text-[color:var(--text-primary)]">{quiz.totalAttempts || quiz.attemptCount || 0}</td>
                       <td className="py-3 px-3 border-b border-[color:var(--border-light)] text-[color:var(--text-primary)]">
-                        <button
-                          className="bg-none border border-[color:var(--border)] rounded py-1 px-3 text-xs text-[color:var(--accent)] cursor-pointer flex items-center gap-1 font-medium transition-all duration-150 hover:bg-[color:var(--accent-light)] hover:border-[color:var(--accent)]"
-                          onClick={() => navigate(`/quiz/${quiz.id}/students`)}
-                        >
-                          View <FiChevronRight />
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            className="bg-none border border-[color:var(--border)] rounded py-1 px-3 text-xs text-[color:var(--accent)] cursor-pointer flex items-center gap-1 font-medium transition-all duration-150 hover:bg-[color:var(--accent-light)] hover:border-[color:var(--accent)]"
+                            onClick={() => handleViewQuizStats(quiz.id)}
+                          >
+                            <FiBarChart2 size={12} /> Stats
+                          </button>
+                          <button
+                            className="bg-none border border-[color:var(--border)] rounded py-1 px-3 text-xs text-[color:var(--accent)] cursor-pointer flex items-center gap-1 font-medium transition-all duration-150 hover:bg-[color:var(--accent-light)] hover:border-[color:var(--accent)]"
+                            onClick={() => navigate(`/quiz/${quiz.id}/students`)}
+                          >
+                            View <FiChevronRight />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -211,12 +233,12 @@ const Dashboard = () => {
               recentAttempts.map((attempt, idx) => (
                 <div key={attempt.id || idx} className="flex items-center gap-3 py-3 border-b border-[color:var(--border-light)] last:border-b-0">
                   <div className="w-9 h-9 rounded-full bg-[color:var(--accent-light)] text-[color:var(--accent)] flex items-center justify-center font-semibold text-sm flex-shrink-0">
-                    {(attempt.user?.username || "?").charAt(0).toUpperCase()}
+                    {(attempt.username || "?").charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 flex flex-col min-w-0">
-                    <span className="font-medium text-sm text-[color:var(--text-primary)]">{attempt.user?.name || attempt.user?.username || "Student"}</span>
+                    <span className="font-medium text-sm text-[color:var(--text-primary)]">{attempt.username || "Student"}</span>
                     <span className="text-xs text-[color:var(--text-muted)]">
-                      {attempt.quiz?.title || "Quiz"} &bull; {formatTime(attempt.timeTakenSeconds)}
+                      {attempt.quizTitle || "Quiz"} &bull; {formatTime(attempt.timeTakenSeconds)}
                     </span>
                   </div>
                   <div className={`py-1 px-2.5 rounded-full text-xs font-semibold flex-shrink-0 ${getScoreClass(attempt.score)}`}>
@@ -228,6 +250,70 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Quiz Stats Modal */}
+      {(selectedQuizStats || statsModalLoading) && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !statsModalLoading && setSelectedQuizStats(null)}>
+          <div className="bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-2xl w-full max-w-[500px] p-6 shadow-xl max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            {statsModalLoading ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="w-8 h-8 border-4 border-[color:var(--accent)] border-t-transparent rounded-full animate-spin mb-3" />
+                <span className="text-sm text-[color:var(--text-muted)]">Loading stats...</span>
+              </div>
+            ) : selectedQuizStats && (
+              <>
+                <div className="flex justify-between items-start mb-5">
+                  <div>
+                    <h3 className="text-lg font-bold text-[color:var(--text-primary)] mb-1">{selectedQuizStats.quizTitle || 'Quiz Stats'}</h3>
+                    <p className="text-xs text-[color:var(--text-muted)]">Detailed analytics</p>
+                  </div>
+                  <button onClick={() => setSelectedQuizStats(null)} className="w-8 h-8 rounded-lg border border-[color:var(--border)] flex items-center justify-center text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)] hover:border-[color:var(--accent)] transition-all">✕</button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-5">
+                  <div className="bg-[color:var(--bg-primary)] rounded-lg p-3 text-center border border-[color:var(--border)]">
+                    <div className="text-xl font-bold text-[color:var(--accent)]">{selectedQuizStats.totalAttempts || 0}</div>
+                    <div className="text-[11px] text-[color:var(--text-muted)]">Total Attempts</div>
+                  </div>
+                  <div className="bg-[color:var(--bg-primary)] rounded-lg p-3 text-center border border-[color:var(--border)]">
+                    <div className="text-xl font-bold text-[color:var(--success)]">{selectedQuizStats.averageScore != null ? `${Math.round(selectedQuizStats.averageScore)}%` : '-'}</div>
+                    <div className="text-[11px] text-[color:var(--text-muted)]">Avg Score</div>
+                  </div>
+                  <div className="bg-[color:var(--bg-primary)] rounded-lg p-3 text-center border border-[color:var(--border)]">
+                    <div className="text-xl font-bold text-[color:var(--text-primary)]">{selectedQuizStats.highestScore != null ? `${selectedQuizStats.highestScore}%` : '-'}</div>
+                    <div className="text-[11px] text-[color:var(--text-muted)]">Highest</div>
+                  </div>
+                  <div className="bg-[color:var(--bg-primary)] rounded-lg p-3 text-center border border-[color:var(--border)]">
+                    <div className="text-xl font-bold text-[color:var(--text-primary)]">{selectedQuizStats.lowestScore != null ? `${selectedQuizStats.lowestScore}%` : '-'}</div>
+                    <div className="text-[11px] text-[color:var(--text-muted)]">Lowest</div>
+                  </div>
+                </div>
+
+                {selectedQuizStats.passRate != null && (
+                  <div className="bg-[color:var(--bg-primary)] rounded-lg p-3 text-center border border-[color:var(--border)] mb-5">
+                    <div className="text-xl font-bold text-[color:var(--warning)]">{Math.round(selectedQuizStats.passRate)}%</div>
+                    <div className="text-[11px] text-[color:var(--text-muted)]">Pass Rate</div>
+                  </div>
+                )}
+
+                {selectedQuizStats.averageTimeTaken != null && (
+                  <div className="bg-[color:var(--bg-primary)] rounded-lg p-3 text-center border border-[color:var(--border)] mb-5">
+                    <div className="text-xl font-bold text-[color:var(--text-primary)]">{formatTime(selectedQuizStats.averageTimeTaken)}</div>
+                    <div className="text-[11px] text-[color:var(--text-muted)]">Avg Time</div>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => setSelectedQuizStats(null)}
+                  className="w-full py-2.5 bg-[color:var(--accent)] text-white rounded-lg text-sm font-medium hover:bg-[color:var(--accent-hover)] transition-all"
+                >
+                  Close
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

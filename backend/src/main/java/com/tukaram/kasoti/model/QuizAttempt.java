@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -19,7 +20,9 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "quiz_attempt")
+@Table(name = "quiz_attempt", uniqueConstraints = {
+        @UniqueConstraint(name = "uq_user_quiz", columnNames = { "user_id", "quiz_id" })
+})
 public class QuizAttempt {
 
     @Id
@@ -30,11 +33,13 @@ public class QuizAttempt {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler", "password" })
+    @ToString.Exclude
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "quiz_id", nullable = false)
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler", "questions" })
+    @ToString.Exclude
     private Quiz quiz;
 
     @Column(nullable = false)

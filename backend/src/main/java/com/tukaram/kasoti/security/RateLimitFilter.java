@@ -12,8 +12,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RateLimitFilter implements Filter {
 
     private final ConcurrentHashMap<String, RateLimitInfo> requestCounts = new ConcurrentHashMap<>();
-    private static final int MAX_REQUESTS = 10;
+    private static final int MAX_REQUESTS = 30;
     private static final long TIME_WINDOW_MS = 60000; // 1 minute
+    private final java.util.concurrent.atomic.AtomicInteger requestCounter = new java.util.concurrent.atomic.AtomicInteger(0);
+    private static final int CLEANUP_INTERVAL = 100; // cleanup every 100 requests
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -41,17 +43,31 @@ public class RateLimitFilter implements Filter {
         }
 
         chain.doFilter(request, response);
+
+        // Periodic cleanup to prevent unbounded map growth
+        if (requestCounter.incrementAndGet() % CLEANUP_INTERVAL == 0) {
+            cleanup();
+        }
     }
 
     /**
-     * Get client IP, considering X-Forwarded-For header for proxied requests.
+     * Get client IP — only uses remoteAddr to prevent X-Forwarded-For spoofing.
+     * If behind a trusted reverse proxy, configure the proxy IP and validate the header.
      */
     private String getClientIP(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
+        // Do NOT trust X-Forwarded-For from unknown sources — it can be spoofed.
+        // Only use request.getRemoteAddr() which is set by the servlet container.
         return request.getRemoteAddr();
+    }
+
+    /**
+     * Remove expired entries to prevent unbounded memory growth.
+     * Called periodically from the filter itself on every Nth request.
+     */
+    public void cleanup() {
+        long now = System.currentTimeMillis();
+        requestCounts.entrySet().removeIf(entry ->
+                now - entry.getValue().windowStart > TIME_WINDOW_MS * 2);
     }
 
     private static class RateLimitInfo {
