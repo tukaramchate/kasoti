@@ -109,133 +109,136 @@ const QuizCard = ({ quiz, onClick, onDelete, onPublish, onClose }) => {
 
     return (
         <>
-        <div
-            className="bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-lg p-[18px] cursor-pointer transition-all duration-150 hover:border-[color:var(--accent-subtle)] hover:shadow hover:-translate-y-px"
-            onClick={onClick}
-        >
-            {/* Header */}
-            <div className="flex justify-between items-start mb-2.5 gap-2.5">
-                <h3 className="text-[15px] font-semibold text-[color:var(--text-primary)] m-0 leading-snug">{quiz.title}</h3>
-                <div className="flex gap-1 flex-shrink-0 flex-wrap">
+            <div
+                className="bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-xl p-5 cursor-pointer transition-all duration-200 hover:border-[color:var(--accent-subtle)] hover:shadow-md hover:-translate-y-0.5 flex flex-col h-full"
+                onClick={onClick}
+            >
+                {/* Badges row */}
+                <div className="flex flex-wrap gap-1.5 mb-3">
                     {quiz.status && quiz.status !== 'PUBLISHED' && (
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${getStatusBadgeStyles()}`}>
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide ${getStatusBadgeStyles()}`}>
                             {quiz.status}
                         </span>
                     )}
                     {quiz.difficulty && (
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${difficultyColors[quiz.difficulty] || 'bg-[color:var(--bg-hover)] text-[color:var(--text-secondary)]'}`}>
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide ${difficultyColors[quiz.difficulty] || 'bg-[color:var(--bg-hover)] text-[color:var(--text-secondary)]'}`}>
                             {quiz.difficulty}
                         </span>
                     )}
-                    <span className="bg-[color:var(--accent-light)] text-[color:var(--accent)] px-2 py-0.5 rounded-full text-[10px] font-semibold">
+                    <span className="bg-[color:var(--accent-light)] text-[color:var(--accent)] px-2.5 py-1 rounded-full text-[10px] font-semibold">
                         {quiz.category || 'General'}
                     </span>
-                    <span className="bg-[color:var(--bg-hover)] text-[color:var(--text-secondary)] px-2 py-0.5 rounded-full text-[10px] font-medium">
+                    <span className="bg-[color:var(--bg-hover)] text-[color:var(--text-secondary)] px-2.5 py-1 rounded-full text-[10px] font-medium">
                         {questionCount} Q
                     </span>
                 </div>
-            </div>
 
-            {/* Meta */}
-            <div className="flex gap-3.5 text-[color:var(--text-muted)] text-xs mb-3.5">
-                <span className="flex items-center gap-1"><FiClock /> {quiz.timeLimitMinutes || questionCount * 1} min</span>
-                <span
-                    onClick={handleLeaderboard}
-                    title="View Leaderboard"
-                    className="flex items-center gap-1 cursor-pointer transition-all duration-150 hover:text-[color:var(--accent)]"
-                >
-                    <FiAward /> Leaderboard
-                </span>
-            </div>
+                {/* Title */}
+                <h3 className="text-[15px] font-semibold text-[color:var(--text-primary)] m-0 mb-2 leading-snug line-clamp-2">{quiz.title}</h3>
 
-            {/* Tags */}
-            {tagList.length > 0 && (
-                <div className="flex flex-wrap gap-1 mb-3.5">
-                    {tagList.slice(0, 4).map((tag) => (
-                        <span key={tag} className="flex items-center gap-0.5 bg-[color:var(--bg-hover)] text-[color:var(--text-muted)] px-1.5 py-0.5 rounded text-[10px]">
-                            <FiTag className="text-[8px]" /> {tag}
-                        </span>
-                    ))}
-                    {tagList.length > 4 && <span className="text-[color:var(--text-muted)] text-[10px] py-0.5">+{tagList.length - 4}</span>}
-                </div>
-            )}
-
-            {/* Footer */}
-            <div className="flex justify-between items-center pt-3.5 border-t border-[color:var(--border-light)]">
-                <div className="flex items-center gap-2">
-                    <div className="w-[26px] h-[26px] bg-[color:var(--accent)] rounded-full flex items-center justify-center text-white text-[10px] font-semibold">
-                        {creatorName?.charAt(0).toUpperCase() || '?'}
-                    </div>
-                    <span className="text-[color:var(--text-muted)] text-xs">
-                        By {creatorName || 'Unknown'}
+                {/* Meta row */}
+                <div className="flex gap-4 text-[color:var(--text-muted)] text-xs mb-3">
+                    <span className="flex items-center gap-1"><FiClock size={12} /> {quiz.timeLimitMinutes || questionCount * 1} min</span>
+                    <span
+                        onClick={handleLeaderboard}
+                        title="View Leaderboard"
+                        className="flex items-center gap-1 cursor-pointer transition-all duration-150 hover:text-[color:var(--accent)]"
+                    >
+                        <FiAward size={12} /> Leaderboard
                     </span>
                 </div>
 
-                {isOwner && (
-                    <div className="flex gap-0.5">
-                        {quiz.status === 'DRAFT' && (
-                            <button
-                                className="w-[30px] h-[30px] bg-transparent border-none rounded-sm cursor-pointer flex items-center justify-center text-sm transition-all duration-150 text-[color:var(--accent)] hover:bg-[color:var(--accent-light)]"
-                                onClick={handlePublish}
-                                title="Publish Quiz"
-                            >
-                                <FiSend />
-                            </button>
-                        )}
-                        {quiz.status === 'PUBLISHED' && (
-                            <>
-                                {quiz.shareCode && (
-                                    <button
-                                        className="w-[30px] h-[30px] bg-transparent border-none rounded-sm cursor-pointer flex items-center justify-center text-sm transition-all duration-150 text-[color:var(--accent)] hover:bg-[color:var(--accent-light)]"
-                                        onClick={handleCopyShareCode}
-                                        title="Copy Share Link"
-                                    >
-                                        <FiShare2 />
-                                    </button>
-                                )}
-                                <button
-                                    className="w-[30px] h-[30px] bg-transparent border-none rounded-sm cursor-pointer flex items-center justify-center text-sm transition-all duration-150 text-[color:var(--accent)] hover:bg-[color:var(--accent-light)]"
-                                    onClick={handleViewStudents}
-                                    title="View Students"
-                                >
-                                    <FiUsers />
-                                </button>
-                                <button
-                                    className="w-[30px] h-[30px] bg-transparent border-none rounded-sm cursor-pointer flex items-center justify-center text-sm transition-all duration-150 text-[color:var(--danger)] hover:bg-[color:var(--danger-light)]"
-                                    onClick={handleClose}
-                                    title="Close Quiz"
-                                >
-                                    <FiLock />
-                                </button>
-                            </>
-                        )}
-                        <button
-                            className="w-[30px] h-[30px] bg-transparent border-none rounded-sm cursor-pointer flex items-center justify-center text-sm transition-all duration-150 text-[color:var(--accent)] hover:bg-[color:var(--accent-light)]"
-                            onClick={handleEdit}
-                            title="Edit Quiz"
-                        >
-                            <FiEdit />
-                        </button>
-                        <button
-                            className="w-[30px] h-[30px] bg-transparent border-none rounded-sm cursor-pointer flex items-center justify-center text-sm transition-all duration-150 text-[color:var(--danger)] hover:bg-[color:var(--danger-light)]"
-                            onClick={handleDelete}
-                            title="Delete Quiz"
-                        >
-                            <FiTrash2 />
-                        </button>
+                {/* Tags */}
+                {tagList.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-3">
+                        {tagList.slice(0, 3).map((tag) => (
+                            <span key={tag} className="flex items-center gap-0.5 bg-[color:var(--bg-hover)] text-[color:var(--text-muted)] px-2 py-0.5 rounded-full text-[10px]">
+                                <FiTag size={8} /> {tag}
+                            </span>
+                        ))}
+                        {tagList.length > 3 && <span className="text-[color:var(--text-muted)] text-[10px] py-0.5 px-1">+{tagList.length - 3}</span>}
                     </div>
                 )}
-            </div>
-        </div>
 
-        <ConfirmDialog
-            open={confirmDialog.open}
-            title={confirmDialog.title}
-            message={confirmDialog.message}
-            variant="danger"
-            onConfirm={() => { confirmDialog.onConfirm?.(); setConfirmDialog(d => ({ ...d, open: false })); }}
-            onCancel={() => setConfirmDialog(d => ({ ...d, open: false }))}
-        />
+                {/* Spacer to push footer down */}
+                <div className="flex-1" />
+
+                {/* Footer */}
+                <div className="flex justify-between items-center pt-3 mt-1 border-t border-[color:var(--border-light)]">
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 bg-[color:var(--accent)] rounded-full flex items-center justify-center text-white text-[10px] font-semibold shrink-0">
+                            {creatorName?.charAt(0).toUpperCase() || '?'}
+                        </div>
+                        <span className="text-[color:var(--text-muted)] text-xs">
+                            By {creatorName || 'Unknown'}
+                        </span>
+                    </div>
+
+                    {isOwner && (
+                        <div className="flex gap-0.5">
+                            {quiz.status === 'DRAFT' && (
+                                <button
+                                    className="w-7 h-7 bg-transparent border-none rounded-md cursor-pointer flex items-center justify-center text-sm transition-all duration-150 text-[color:var(--accent)] hover:bg-[color:var(--accent-light)]"
+                                    onClick={handlePublish}
+                                    title="Publish Quiz"
+                                >
+                                    <FiSend size={13} />
+                                </button>
+                            )}
+                            {quiz.status === 'PUBLISHED' && (
+                                <>
+                                    {quiz.shareCode && (
+                                        <button
+                                            className="w-7 h-7 bg-transparent border-none rounded-md cursor-pointer flex items-center justify-center text-sm transition-all duration-150 text-[color:var(--accent)] hover:bg-[color:var(--accent-light)]"
+                                            onClick={handleCopyShareCode}
+                                            title="Copy Share Link"
+                                        >
+                                            <FiShare2 size={13} />
+                                        </button>
+                                    )}
+                                    <button
+                                        className="w-7 h-7 bg-transparent border-none rounded-md cursor-pointer flex items-center justify-center text-sm transition-all duration-150 text-[color:var(--accent)] hover:bg-[color:var(--accent-light)]"
+                                        onClick={handleViewStudents}
+                                        title="View Students"
+                                    >
+                                        <FiUsers size={13} />
+                                    </button>
+                                    <button
+                                        className="w-7 h-7 bg-transparent border-none rounded-md cursor-pointer flex items-center justify-center text-sm transition-all duration-150 text-[color:var(--danger)] hover:bg-[color:var(--danger-light)]"
+                                        onClick={handleClose}
+                                        title="Close Quiz"
+                                    >
+                                        <FiLock size={13} />
+                                    </button>
+                                </>
+                            )}
+                            <button
+                                className="w-7 h-7 bg-transparent border-none rounded-md cursor-pointer flex items-center justify-center text-sm transition-all duration-150 text-[color:var(--accent)] hover:bg-[color:var(--accent-light)]"
+                                onClick={handleEdit}
+                                title="Edit Quiz"
+                            >
+                                <FiEdit size={13} />
+                            </button>
+                            <button
+                                className="w-7 h-7 bg-transparent border-none rounded-md cursor-pointer flex items-center justify-center text-sm transition-all duration-150 text-[color:var(--danger)] hover:bg-[color:var(--danger-light)]"
+                                onClick={handleDelete}
+                                title="Delete Quiz"
+                            >
+                                <FiTrash2 size={13} />
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <ConfirmDialog
+                open={confirmDialog.open}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                variant="danger"
+                onConfirm={() => { confirmDialog.onConfirm?.(); setConfirmDialog(d => ({ ...d, open: false })); }}
+                onCancel={() => setConfirmDialog(d => ({ ...d, open: false }))}
+            />
         </>
     );
 };

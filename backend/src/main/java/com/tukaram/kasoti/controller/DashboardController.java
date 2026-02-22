@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -24,16 +27,21 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/dashboard")
 @RequiredArgsConstructor
+@Tag(name = "Dashboard", description = "Teacher dashboard statistics")
 public class DashboardController {
 
     private final DashboardService dashboardService;
 
+    @Operation(summary = "Get dashboard stats", description = "Returns summary stats for the teacher's quizzes")
+    @ApiResponse(responseCode = "200", description = "Dashboard statistics")
     @GetMapping("/stats")
     public ResponseEntity<DashboardStatsDTO> getStats(
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(dashboardService.getTeacherStats(principal.getId()));
     }
 
+    @Operation(summary = "Get quizzes with stats", description = "Paginated list of teacher's quizzes with attempt statistics")
+    @ApiResponse(responseCode = "200", description = "Page of quiz statistics")
     @GetMapping("/quizzes")
     public ResponseEntity<Page<QuizStatisticsDTO>> getQuizzesWithStats(
             @AuthenticationPrincipal UserPrincipal principal,
@@ -42,6 +50,8 @@ public class DashboardController {
         return ResponseEntity.ok(dashboardService.getTeacherQuizzesWithStats(principal.getId(), page, size));
     }
 
+    @Operation(summary = "Get single quiz stats", description = "Detailed statistics for a specific quiz")
+    @ApiResponse(responseCode = "200", description = "Quiz statistics")
     @GetMapping("/quizzes/{id}/stats")
     public ResponseEntity<QuizStatisticsDTO> getQuizStats(
             @PathVariable Long id,
@@ -49,6 +59,8 @@ public class DashboardController {
         return ResponseEntity.ok(dashboardService.getQuizStatistics(id, principal.getId()));
     }
 
+    @Operation(summary = "Get recent attempts", description = "List recent quiz attempts across the teacher's quizzes")
+    @ApiResponse(responseCode = "200", description = "List of recent attempts")
     @GetMapping("/recent-attempts")
     public ResponseEntity<List<AttemptSummaryDTO>> getRecentAttempts(
             @AuthenticationPrincipal UserPrincipal principal,

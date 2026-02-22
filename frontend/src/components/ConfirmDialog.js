@@ -15,7 +15,7 @@ const ConfirmDialog = ({ open, title, message, confirmText = "Confirm", cancelTe
 
       {/* Dialog */}
       <div
-        className="relative bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-xl p-6 w-full max-w-sm shadow-xl animate-in zoom-in-95"
+        className="relative bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-xl p-6 w-full max-w-sm shadow-xl animate-fade-in"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-3 mb-4">

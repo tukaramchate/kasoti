@@ -76,6 +76,13 @@
 			<version>1.18.42</version> <!-- Edge version for Java 25 support -->
 			<optional>true</optional>
 		</dependency>
+
+		<!-- OpenAPI / Swagger UI -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>2.3.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>

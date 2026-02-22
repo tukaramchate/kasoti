@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.time.LocalDateTime;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,10 +22,13 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/health")
 @RequiredArgsConstructor
+@Tag(name = "Health", description = "Service health checks")
 public class HealthController {
 
     private final DataSource dataSource;
 
+    @Operation(summary = "Basic health check", description = "Returns UP status if the service is running")
+    @ApiResponse(responseCode = "200", description = "Service is healthy")
     @GetMapping
     public ResponseEntity<Map<String, Object>> health() {
         return ResponseEntity.ok(Map.of(
@@ -30,6 +37,8 @@ public class HealthController {
                 "service", "Kasoti Quiz Server"));
     }
 
+    @Operation(summary = "Detailed health check", description = "Returns health status of all components including database")
+    @ApiResponse(responseCode = "200", description = "Component health details")
     @GetMapping("/detailed")
     public ResponseEntity<Map<String, Object>> detailedHealth() {
         String dbStatus = "DOWN";

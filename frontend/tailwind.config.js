@@ -70,6 +70,7 @@ module.exports = {
         shimmer: 'shimmer 1.5s infinite',
         spin: 'spin 0.6s linear infinite',
         'pulse-timer': 'pulse-timer 1s infinite',
+        'fade-in': 'fade-in 0.15s ease-out',
       },
       keyframes: {
         shimmer: {
@@ -79,6 +80,10 @@ module.exports = {
         'pulse-timer': {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.6' },
+        },
+        'fade-in': {
+          '0%': { opacity: '0', transform: 'scale(0.95)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
         },
       },
     },

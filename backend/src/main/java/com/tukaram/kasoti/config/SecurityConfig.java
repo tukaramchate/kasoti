@@ -68,7 +68,12 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/api/health/**",
                                 "/api/public/**",
-                                "/api/categories/**")
+                                "/api/categories/**",
+                                // Swagger / OpenAPI
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml")
                         .permitAll()
 
                         // Admin only endpoints

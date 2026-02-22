@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { adminAPI } from "../../api";
-import { Link } from "react-router-dom";
+
 import { toast } from "react-toastify";
 import {
   FiUsers, FiBookOpen, FiBarChart2, FiTrash2,
-  FiArrowLeft, FiChevronLeft, FiChevronRight, FiActivity,
+  FiChevronLeft, FiChevronRight, FiActivity,
   FiChevronDown, FiChevronUp
 } from "react-icons/fi";
-import PageHeader from "../../components/PageHeader";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
 const TABS = [
@@ -181,11 +180,9 @@ const Admin = () => {
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 py-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
-        <PageHeader title="Admin Panel" />
-        <Link to="/home" className="flex items-center gap-1.5 text-[color:var(--text-secondary)] no-underline text-sm font-medium transition-all duration-150 hover:text-[color:var(--accent)]">
-          <FiArrowLeft /> Back to Home
-        </Link>
+      <div className="mb-6">
+        <h1 className="text-xl font-semibold text-[color:var(--text-primary)]">Admin Panel</h1>
+        <p className="text-sm text-[color:var(--text-secondary)] mt-0.5">Manage users, quizzes, and monitor activity</p>
       </div>
 
       {/* Tab Navigation */}
@@ -193,11 +190,10 @@ const Admin = () => {
         {TABS.map((t) => (
           <button
             key={t.key}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 border-none rounded text-sm font-medium cursor-pointer transition-all duration-150 ${
-              tab === t.key
-                ? 'bg-[color:var(--accent)] text-white shadow-sm'
-                : 'bg-transparent text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] hover:bg-[color:var(--bg-hover)]'
-            }`}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 border-none rounded text-sm font-medium cursor-pointer transition-all duration-150 ${tab === t.key
+              ? 'bg-[color:var(--accent)] text-white shadow-sm'
+              : 'bg-transparent text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] hover:bg-[color:var(--bg-hover)]'
+              }`}
             onClick={() => setTab(t.key)}
           >
             {t.icon} {t.label}
@@ -262,11 +258,10 @@ const Admin = () => {
               {["ALL", "STUDENT", "TEACHER", "ADMIN"].map((r) => (
                 <button
                   key={r}
-                  className={`py-1.5 px-3.5 border-none rounded-sm text-[13px] font-medium cursor-pointer transition-all duration-150 ${
-                    roleFilter === r
-                      ? 'bg-[color:var(--bg-card)] text-[color:var(--accent)] shadow-sm'
-                      : 'bg-transparent text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)]'
-                  }`}
+                  className={`py-1.5 px-3.5 border-none rounded-sm text-[13px] font-medium cursor-pointer transition-all duration-150 ${roleFilter === r
+                    ? 'bg-[color:var(--bg-card)] text-[color:var(--accent)] shadow-sm'
+                    : 'bg-transparent text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)]'
+                    }`}
                   onClick={() => { setRoleFilter(r); setUserPage(0); }}
                 >
                   {r === "ALL" ? "All" : r.charAt(0) + r.slice(1).toLowerCase()}
@@ -476,97 +471,97 @@ const Admin = () => {
                     ) : (
                       attempts.map((a) => (
                         <React.Fragment key={a.attemptId}>
-                        <tr className="hover:bg-[color:var(--bg-hover)] cursor-pointer" onClick={async () => {
-                          if (expandedAttempt === a.attemptId) {
-                            setExpandedAttempt(null);
-                            setAttemptDetail(null);
-                          } else {
-                            setExpandedAttempt(a.attemptId);
-                            setDetailLoading(true);
-                            try {
-                              const res = await adminAPI.getAttemptById(a.attemptId);
-                              setAttemptDetail(res.data);
-                            } catch { setAttemptDetail(null); }
-                            finally { setDetailLoading(false); }
-                          }
-                        }}>
-                          <td className="py-3 px-3 border-b border-[color:var(--border-light)] text-[color:var(--text-primary)]">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-full bg-[color:var(--accent-light)] text-[color:var(--accent)] flex items-center justify-center font-semibold text-[13px] flex-shrink-0">
-                                {(a.username || "?").charAt(0).toUpperCase()}
-                              </div>
-                              <span className="font-medium text-[13px]">@{a.username}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 border-b border-[color:var(--border-light)] text-[color:var(--text-primary)] text-[13px]">{a.quizTitle}</td>
-                          <td className="py-3 px-3 border-b border-[color:var(--border-light)] text-[color:var(--text-primary)] hidden md:table-cell">
-                            <span className={`inline-block py-0.5 px-2.5 rounded-full text-[11px] font-semibold ${a.score >= 60 ? 'bg-[color:var(--success-light)] text-[color:var(--success)]' : 'bg-[color:var(--danger-light)] text-[color:var(--danger)]'}`}>
-                              {a.score}%
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 border-b border-[color:var(--border-light)] text-[color:var(--text-secondary)] text-[13px] hidden md:table-cell">
-                            {a.marksObtained ?? '-'}/{a.totalMarks ?? '-'}
-                          </td>
-                          <td className="py-3 px-3 border-b border-[color:var(--border-light)] text-[color:var(--text-secondary)] text-[13px] hidden md:table-cell">
-                            {a.correctAnswers}/{a.totalQuestions}
-                          </td>
-                          <td className="py-3 px-3 border-b border-[color:var(--border-light)] text-[color:var(--text-secondary)] text-[13px] hidden lg:table-cell">
-                            {a.timeTakenSeconds ? `${Math.floor(a.timeTakenSeconds / 60)}m ${a.timeTakenSeconds % 60}s` : "-"}
-                          </td>
-                          <td className="py-3 px-3 border-b border-[color:var(--border-light)] text-[color:var(--text-muted)] text-[13px] hidden lg:table-cell">
-                            {a.attemptedAt ? new Date(a.attemptedAt).toLocaleDateString() : "-"}
-                          </td>
-                          <td className="py-3 px-3 border-b border-[color:var(--border-light)] text-[color:var(--text-muted)]">
-                            {expandedAttempt === a.attemptId ? <FiChevronUp /> : <FiChevronDown />}
-                          </td>
-                        </tr>
-                        {expandedAttempt === a.attemptId && (
-                          <tr>
-                            <td colSpan="8" className="p-0">
-                              <div className="bg-[color:var(--bg-secondary)] border-b border-[color:var(--border)] px-5 py-4">
-                                {detailLoading ? (
-                                  <div className="flex items-center justify-center py-4">
-                                    <div className="w-6 h-6 border-2 border-[color:var(--border)] border-t-[color:var(--accent)] rounded-full animate-spin"></div>
-                                  </div>
-                                ) : attemptDetail?.answers?.length > 0 ? (
-                                  <div className="flex flex-col gap-2">
-                                    <h4 className="text-sm font-semibold text-[color:var(--text-primary)] mb-1">Answer Details</h4>
-                                    {attemptDetail.answers.map((ans, idx) => {
-                                      const qType = ans.questionType || 'MCQ';
-                                      return (
-                                      <div key={idx} className={`flex flex-col gap-1 py-2 px-3 rounded text-[13px] ${ans.isCorrect == null ? 'bg-[color:var(--bg-hover)]' : ans.isCorrect ? 'bg-[color:var(--success-light)]' : 'bg-[color:var(--danger-light)]'}`}>
-                                        <span className="font-medium text-[color:var(--text-primary)]">Q{idx + 1}: {ans.questionText} <span className="text-[10px] uppercase text-[color:var(--text-muted)]">({qType.replace('_','/')})</span></span>
-                                        <div className="flex flex-wrap gap-3 text-xs">
-                                          {qType === 'DESCRIPTIVE' ? (
-                                            <>
-                                              <span>Answer: <strong>{ans.textAnswer || 'None'}</strong></span>
-                                              <span>{ans.isCorrect == null ? 'Pending Review' : `${ans.marksObtained}/${ans.maxMarks}`}</span>
-                                            </>
-                                          ) : qType === 'MSQ' ? (
-                                            <>
-                                              <span>Selected: <strong>{(ans.selectedOptions || []).join(', ') || 'None'}</strong></span>
-                                              <span>Correct: <strong>{(ans.correctOptions || []).join(', ')}</strong></span>
-                                              <span>{ans.marksObtained}/{ans.maxMarks}</span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <span>Selected: <strong>{ans.selectedOption || 'None'}</strong></span>
-                                              <span>Correct: <strong>{ans.correctOption}</strong></span>
-                                              <span>{ans.marksObtained}/{ans.maxMarks}</span>
-                                            </>
-                                          )}
-                                        </div>
-                                      </div>
-                                      );
-                                    })}
-                                  </div>
-                                ) : (
-                                  <p className="text-[color:var(--text-muted)] text-sm">No answer details available.</p>
-                                )}
+                          <tr className="hover:bg-[color:var(--bg-hover)] cursor-pointer" onClick={async () => {
+                            if (expandedAttempt === a.attemptId) {
+                              setExpandedAttempt(null);
+                              setAttemptDetail(null);
+                            } else {
+                              setExpandedAttempt(a.attemptId);
+                              setDetailLoading(true);
+                              try {
+                                const res = await adminAPI.getAttemptById(a.attemptId);
+                                setAttemptDetail(res.data);
+                              } catch { setAttemptDetail(null); }
+                              finally { setDetailLoading(false); }
+                            }
+                          }}>
+                            <td className="py-3 px-3 border-b border-[color:var(--border-light)] text-[color:var(--text-primary)]">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-full bg-[color:var(--accent-light)] text-[color:var(--accent)] flex items-center justify-center font-semibold text-[13px] flex-shrink-0">
+                                  {(a.username || "?").charAt(0).toUpperCase()}
+                                </div>
+                                <span className="font-medium text-[13px]">@{a.username}</span>
                               </div>
                             </td>
+                            <td className="py-3 px-3 border-b border-[color:var(--border-light)] text-[color:var(--text-primary)] text-[13px]">{a.quizTitle}</td>
+                            <td className="py-3 px-3 border-b border-[color:var(--border-light)] text-[color:var(--text-primary)] hidden md:table-cell">
+                              <span className={`inline-block py-0.5 px-2.5 rounded-full text-[11px] font-semibold ${a.score >= 60 ? 'bg-[color:var(--success-light)] text-[color:var(--success)]' : 'bg-[color:var(--danger-light)] text-[color:var(--danger)]'}`}>
+                                {a.score}%
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 border-b border-[color:var(--border-light)] text-[color:var(--text-secondary)] text-[13px] hidden md:table-cell">
+                              {a.marksObtained ?? '-'}/{a.totalMarks ?? '-'}
+                            </td>
+                            <td className="py-3 px-3 border-b border-[color:var(--border-light)] text-[color:var(--text-secondary)] text-[13px] hidden md:table-cell">
+                              {a.correctAnswers}/{a.totalQuestions}
+                            </td>
+                            <td className="py-3 px-3 border-b border-[color:var(--border-light)] text-[color:var(--text-secondary)] text-[13px] hidden lg:table-cell">
+                              {a.timeTakenSeconds ? `${Math.floor(a.timeTakenSeconds / 60)}m ${a.timeTakenSeconds % 60}s` : "-"}
+                            </td>
+                            <td className="py-3 px-3 border-b border-[color:var(--border-light)] text-[color:var(--text-muted)] text-[13px] hidden lg:table-cell">
+                              {a.attemptedAt ? new Date(a.attemptedAt).toLocaleDateString() : "-"}
+                            </td>
+                            <td className="py-3 px-3 border-b border-[color:var(--border-light)] text-[color:var(--text-muted)]">
+                              {expandedAttempt === a.attemptId ? <FiChevronUp /> : <FiChevronDown />}
+                            </td>
                           </tr>
-                        )}
+                          {expandedAttempt === a.attemptId && (
+                            <tr>
+                              <td colSpan="8" className="p-0">
+                                <div className="bg-[color:var(--bg-secondary)] border-b border-[color:var(--border)] px-5 py-4">
+                                  {detailLoading ? (
+                                    <div className="flex items-center justify-center py-4">
+                                      <div className="w-6 h-6 border-2 border-[color:var(--border)] border-t-[color:var(--accent)] rounded-full animate-spin"></div>
+                                    </div>
+                                  ) : attemptDetail?.answers?.length > 0 ? (
+                                    <div className="flex flex-col gap-2">
+                                      <h4 className="text-sm font-semibold text-[color:var(--text-primary)] mb-1">Answer Details</h4>
+                                      {attemptDetail.answers.map((ans, idx) => {
+                                        const qType = ans.questionType || 'MCQ';
+                                        return (
+                                          <div key={idx} className={`flex flex-col gap-1 py-2 px-3 rounded text-[13px] ${ans.isCorrect == null ? 'bg-[color:var(--bg-hover)]' : ans.isCorrect ? 'bg-[color:var(--success-light)]' : 'bg-[color:var(--danger-light)]'}`}>
+                                            <span className="font-medium text-[color:var(--text-primary)]">Q{idx + 1}: {ans.questionText} <span className="text-[10px] uppercase text-[color:var(--text-muted)]">({qType.replace('_', '/')})</span></span>
+                                            <div className="flex flex-wrap gap-3 text-xs">
+                                              {qType === 'DESCRIPTIVE' ? (
+                                                <>
+                                                  <span>Answer: <strong>{ans.textAnswer || 'None'}</strong></span>
+                                                  <span>{ans.isCorrect == null ? 'Pending Review' : `${ans.marksObtained}/${ans.maxMarks}`}</span>
+                                                </>
+                                              ) : qType === 'MSQ' ? (
+                                                <>
+                                                  <span>Selected: <strong>{(ans.selectedOptions || []).join(', ') || 'None'}</strong></span>
+                                                  <span>Correct: <strong>{(ans.correctOptions || []).join(', ')}</strong></span>
+                                                  <span>{ans.marksObtained}/{ans.maxMarks}</span>
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <span>Selected: <strong>{ans.selectedOption || 'None'}</strong></span>
+                                                  <span>Correct: <strong>{ans.correctOption}</strong></span>
+                                                  <span>{ans.marksObtained}/{ans.maxMarks}</span>
+                                                </>
+                                              )}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  ) : (
+                                    <p className="text-[color:var(--text-muted)] text-sm">No answer details available.</p>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
                         </React.Fragment>
                       ))
                     )}

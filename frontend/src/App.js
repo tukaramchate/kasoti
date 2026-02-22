@@ -6,8 +6,10 @@ import {
 } from "react-router-dom";
 import { ProtectedRoute, GuestRoute, RoleGuard } from "./components/RouteGuards";
 import ErrorBoundary from "./components/ErrorBoundary";
+import Navbar from "./components/Navbar";
 import LoadingSpinner from "./components/LoadingSpinner";
 import { ToastContainer } from "react-toastify";
+import { useTheme } from "./context/ThemeContext";
 import "react-toastify/dist/ReactToastify.css";
 
 // Lazy-loaded pages
@@ -32,10 +34,19 @@ const SuspenseFallback = () => (
   </div>
 );
 
-const App = () => {
+/** Layout wrapper that renders the Navbar + page content */
+const AppLayout = ({ children }) => (
+  <>
+    <Navbar />
+    <main>{children}</main>
+  </>
+);
+
+const AppRoutes = () => {
+  const { darkMode } = useTheme();
+
   return (
-    <ErrorBoundary>
-    <Router>
+    <>
       <Suspense fallback={<SuspenseFallback />}>
         <Routes>
           {/* Public routes */}
@@ -46,40 +57,70 @@ const App = () => {
           <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
           <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
 
-          {/* Protected routes (require auth) */}
-          <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-          <Route path="/quiz/:id" element={<ProtectedRoute><QuizData /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/leaderboard/:id" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+          {/* Protected routes with Navbar */}
+          <Route path="/home" element={
+            <ProtectedRoute><AppLayout><Home /></AppLayout></ProtectedRoute>
+          } />
+          <Route path="/quiz/:id" element={
+            <ProtectedRoute><AppLayout><QuizData /></AppLayout></ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute><AppLayout><Profile /></AppLayout></ProtectedRoute>
+          } />
+          <Route path="/leaderboard/:id" element={
+            <ProtectedRoute><AppLayout><Leaderboard /></AppLayout></ProtectedRoute>
+          } />
 
-          {/* Teacher + Admin routes */}
+          {/* Teacher + Admin routes with Navbar */}
           <Route path="/addQuiz" element={
-            <ProtectedRoute><RoleGuard roles={["TEACHER", "ADMIN"]}><AddQuiz /></RoleGuard></ProtectedRoute>
+            <ProtectedRoute><RoleGuard roles={["TEACHER", "ADMIN"]}><AppLayout><AddQuiz /></AppLayout></RoleGuard></ProtectedRoute>
           } />
           <Route path="/editQuiz/:id" element={
-            <ProtectedRoute><RoleGuard roles={["TEACHER", "ADMIN"]}><EditQuiz /></RoleGuard></ProtectedRoute>
+            <ProtectedRoute><RoleGuard roles={["TEACHER", "ADMIN"]}><AppLayout><EditQuiz /></AppLayout></RoleGuard></ProtectedRoute>
           } />
           <Route path="/quiz/:id/students" element={
-            <ProtectedRoute><RoleGuard roles={["TEACHER", "ADMIN"]}><QuizStudents /></RoleGuard></ProtectedRoute>
+            <ProtectedRoute><RoleGuard roles={["TEACHER", "ADMIN"]}><AppLayout><QuizStudents /></AppLayout></RoleGuard></ProtectedRoute>
           } />
           <Route path="/dashboard" element={
-            <ProtectedRoute><RoleGuard roles={["TEACHER", "ADMIN"]}><Dashboard /></RoleGuard></ProtectedRoute>
+            <ProtectedRoute><RoleGuard roles={["TEACHER", "ADMIN"]}><AppLayout><Dashboard /></AppLayout></RoleGuard></ProtectedRoute>
           } />
 
-          {/* Admin-only routes */}
+          {/* Admin-only routes with Navbar */}
           <Route path="/admin" element={
-            <ProtectedRoute><RoleGuard roles={["ADMIN"]}><Admin /></RoleGuard></ProtectedRoute>
+            <ProtectedRoute><RoleGuard roles={["ADMIN"]}><AppLayout><Admin /></AppLayout></RoleGuard></ProtectedRoute>
           } />
 
           {/* 404 catch-all */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
-      <ToastContainer />
-    </Router>
-    </ErrorBoundary>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnFocusLoss={false}
+        draggable
+        pauseOnHover
+        theme={darkMode ? "dark" : "light"}
+        toastStyle={{
+          borderRadius: "10px",
+          fontSize: "13px",
+        }}
+      />
+    </>
   );
 };
 
+const App = () => {
+  return (
+    <ErrorBoundary>
+      <Router>
+        <AppRoutes />
+      </Router>
+    </ErrorBoundary>
+  );
+};
 
 export default App;

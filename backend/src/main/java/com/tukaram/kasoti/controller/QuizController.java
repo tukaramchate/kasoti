@@ -14,6 +14,11 @@ import com.tukaram.kasoti.security.UserPrincipal;
 import com.tukaram.kasoti.service.EvaluationService;
 import com.tukaram.kasoti.service.ExportService;
 import com.tukaram.kasoti.service.QuizService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -39,6 +44,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/quizzes")
 @RequiredArgsConstructor
+@Tag(name = "Quizzes", description = "Quiz CRUD, publishing, sharing, and submission")
 public class QuizController {
 
     private final QuizService quizService;
@@ -47,10 +53,8 @@ public class QuizController {
 
     // ========== Public Endpoints ==========
 
-    /**
-     * Get quizzes with pagination and optional filters.
-     * All filters are optional — omitted filters are ignored.
-     */
+    @Operation(summary = "List quizzes", description = "Get published quizzes with pagination and optional filters (search, category, difficulty, tags)")
+    @ApiResponse(responseCode = "200", description = "Page of quiz summaries")
     @GetMapping
     public ResponseEntity<Page<QuizSummaryDTO>> getQuizzes(
             @RequestParam(defaultValue = "0") int page,
@@ -62,16 +66,28 @@ public class QuizController {
         return ResponseEntity.ok(quizService.findQuizzes(search, category, difficulty, tags, page, size));
     }
 
+    @Operation(summary = "Get quiz by ID", description = "Returns full quiz details including questions")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Quiz found"),
+            @ApiResponse(responseCode = "404", description = "Quiz not found")
+    })
     @GetMapping("/{id}")
     public ResponseEntity<QuizDTO> getQuizById(@PathVariable Long id) {
         return ResponseEntity.ok(quizService.getQuizByIdDTO(id));
     }
 
+    @Operation(summary = "Get quiz by share code", description = "Look up a quiz using its unique share code")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Quiz found"),
+            @ApiResponse(responseCode = "404", description = "Invalid share code")
+    })
     @GetMapping("/share/{shareCode}")
     public ResponseEntity<QuizDTO> getQuizByShareCode(@PathVariable String shareCode) {
         return ResponseEntity.ok(quizService.getQuizByShareCode(shareCode));
     }
 
+    @Operation(summary = "Get quiz leaderboard", description = "Returns ranked list of top scorers for a quiz")
+    @ApiResponse(responseCode = "200", description = "Leaderboard entries")
     @GetMapping("/{id}/leaderboard")
     public ResponseEntity<List<LeaderboardEntryDTO>> getLeaderboard(@PathVariable Long id) {
         return ResponseEntity.ok(quizService.getQuizLeaderboard(id));
@@ -79,6 +95,8 @@ public class QuizController {
 
     // ========== Student Endpoints ==========
 
+    @Operation(summary = "Check if user attempted quiz", description = "Returns whether the authenticated user has already attempted this quiz")
+    @ApiResponse(responseCode = "200", description = "Attempt status")
     @GetMapping("/{id}/attempted")
     public ResponseEntity<Map<String, Boolean>> hasAttempted(
             @PathVariable Long id,
@@ -87,6 +105,12 @@ public class QuizController {
         return ResponseEntity.ok(Map.of("attempted", attempted));
     }
 
+    @Operation(summary = "Submit quiz answers", description = "Submit answers for a quiz attempt. Each quiz can only be attempted once.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Quiz submitted, results returned"),
+            @ApiResponse(responseCode = "400", description = "Quiz already attempted or not published"),
+            @ApiResponse(responseCode = "404", description = "Quiz not found")
+    })
     @PostMapping("/{id}/submit")
     public ResponseEntity<QuizResultResponse> submitQuiz(
             @PathVariable Long id,
@@ -97,12 +121,19 @@ public class QuizController {
 
     // ========== Teacher Endpoints ==========
 
+    @Operation(summary = "Get my quizzes", description = "Returns all quizzes created by the authenticated teacher")
+    @ApiResponse(responseCode = "200", description = "List of teacher's quizzes")
     @GetMapping("/my")
     public ResponseEntity<List<Quiz>> getMyQuizzes(
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(quizService.getQuizzesByCreator(principal.getId()));
     }
 
+    @Operation(summary = "Create a quiz", description = "Create a new quiz with questions. Only TEACHER and ADMIN roles.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Quiz created"),
+            @ApiResponse(responseCode = "400", description = "Invalid quiz data")
+    })
     @PostMapping
     public ResponseEntity<Quiz> createQuiz(
             @Valid @RequestBody CreateQuizRequest request,
@@ -111,6 +142,12 @@ public class QuizController {
                 .body(quizService.createQuiz(request, principal));
     }
 
+    @Operation(summary = "Update a quiz", description = "Update an existing quiz. Only the creator can update.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Quiz updated"),
+            @ApiResponse(responseCode = "403", description = "Not the quiz creator"),
+            @ApiResponse(responseCode = "404", description = "Quiz not found")
+    })
     @PutMapping("/{id}")
     public ResponseEntity<Quiz> updateQuiz(
             @PathVariable Long id,
@@ -119,6 +156,12 @@ public class QuizController {
         return ResponseEntity.ok(quizService.updateQuiz(id, request, principal));
     }
 
+    @Operation(summary = "Delete a quiz", description = "Delete a quiz and all its data. Only the creator can delete.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Quiz deleted"),
+            @ApiResponse(responseCode = "403", description = "Not the quiz creator"),
+            @ApiResponse(responseCode = "404", description = "Quiz not found")
+    })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteQuiz(
             @PathVariable Long id,
@@ -127,6 +170,11 @@ public class QuizController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Publish a quiz", description = "Publish a draft quiz to make it available to students. Generates a share code.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Quiz published with share code"),
+            @ApiResponse(responseCode = "400", description = "Quiz already published or has no questions")
+    })
     @PostMapping("/{id}/publish")
     public ResponseEntity<PublishQuizResponse> publishQuiz(
             @PathVariable Long id,
@@ -134,6 +182,8 @@ public class QuizController {
         return ResponseEntity.ok(quizService.publishQuiz(id, principal));
     }
 
+    @Operation(summary = "Close a quiz", description = "Close a published quiz so no more submissions are accepted")
+    @ApiResponse(responseCode = "200", description = "Quiz closed")
     @PostMapping("/{id}/close")
     public ResponseEntity<Quiz> closeQuiz(
             @PathVariable Long id,
@@ -141,6 +191,8 @@ public class QuizController {
         return ResponseEntity.ok(quizService.closeQuiz(id, principal));
     }
 
+    @Operation(summary = "Get quiz students", description = "List all students who attempted a quiz with their scores. Teacher/Admin only.")
+    @ApiResponse(responseCode = "200", description = "List of student results")
     @GetMapping("/{id}/students")
     public ResponseEntity<List<LeaderboardEntryDTO>> getQuizStudents(
             @PathVariable Long id,
@@ -151,10 +203,11 @@ public class QuizController {
 
     // ========== Export Endpoints ==========
 
-    /**
-     * Export a quiz as JSON file.
-     * Only the quiz creator can export.
-     */
+    @Operation(summary = "Export quiz as JSON", description = "Download the quiz data as a JSON file. Only the quiz creator can export.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "JSON file download"),
+            @ApiResponse(responseCode = "403", description = "Not the quiz creator")
+    })
     @GetMapping("/{id}/export")
     public ResponseEntity<String> exportQuiz(
             @PathVariable Long id,
@@ -170,10 +223,11 @@ public class QuizController {
                 .body(jsonContent);
     }
 
-    /**
-     * Export quiz attempts as CSV file.
-     * Only the quiz creator can export attempts.
-     */
+    @Operation(summary = "Export attempts as CSV", description = "Download all student attempts for a quiz as a CSV file. Only the quiz creator can export.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "CSV file download"),
+            @ApiResponse(responseCode = "403", description = "Not the quiz creator")
+    })
     @GetMapping("/{id}/attempts/export")
     public ResponseEntity<String> exportAttempts(
             @PathVariable Long id,
@@ -191,10 +245,8 @@ public class QuizController {
 
     // ========== DESCRIPTIVE Answer Evaluation Endpoints ==========
 
-    /**
-     * Get all pending DESCRIPTIVE answers for a quiz.
-     * Only the quiz creator or admin can access.
-     */
+    @Operation(summary = "Get pending evaluations", description = "List all unevaluated descriptive answers for a quiz. Teacher/Admin only.")
+    @ApiResponse(responseCode = "200", description = "List of pending answers")
     @GetMapping("/{id}/pending-evaluations")
     public ResponseEntity<List<AnswerDTO>> getPendingEvaluations(
             @PathVariable Long id,
@@ -202,10 +254,11 @@ public class QuizController {
         return ResponseEntity.ok(evaluationService.getPendingAnswers(id, principal));
     }
 
-    /**
-     * Evaluate a single DESCRIPTIVE answer.
-     * Only the quiz creator or admin can evaluate.
-     */
+    @Operation(summary = "Evaluate a descriptive answer", description = "Assign marks and optional comment to a descriptive answer. Teacher/Admin only.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Answer evaluated"),
+            @ApiResponse(responseCode = "404", description = "Answer not found")
+    })
     @PutMapping("/answers/{answerId}/evaluate")
     public ResponseEntity<AnswerDTO> evaluateAnswer(
             @PathVariable Long answerId,

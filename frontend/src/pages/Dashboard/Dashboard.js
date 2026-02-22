@@ -2,8 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { dashboardAPI } from "../../api";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
-import { FiBookOpen, FiUsers, FiCheckCircle, FiTrendingUp, FiClock, FiBarChart2, FiArrowLeft, FiChevronRight, FiLock } from "react-icons/fi";
-import PageHeader from "../../components/PageHeader";
+import { FiBookOpen, FiUsers, FiCheckCircle, FiTrendingUp, FiClock, FiBarChart2, FiChevronRight, FiLock } from "react-icons/fi";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -84,11 +83,9 @@ const Dashboard = () => {
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 py-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
-        <PageHeader title="Teacher Dashboard" />
-        <Link to="/home" className="flex items-center gap-1.5 text-[color:var(--text-secondary)] no-underline text-sm font-medium transition-all duration-150 hover:text-[color:var(--accent)]">
-          <FiArrowLeft /> Back to Home
-        </Link>
+      <div className="mb-6">
+        <h1 className="text-xl font-semibold text-[color:var(--text-primary)]">Teacher Dashboard</h1>
+        <p className="text-sm text-[color:var(--text-secondary)] mt-0.5">Overview of your quizzes and student activity</p>
       </div>
 
       {/* Stats Cards */}

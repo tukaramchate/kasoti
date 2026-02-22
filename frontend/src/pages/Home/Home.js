@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { quizAPI } from "../../api";
 import { useAuth } from "../../context/UserContext";
-import { useTheme } from "../../context/ThemeContext";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { FiSearch, FiMoon, FiSun, FiChevronLeft, FiChevronRight, FiFilter } from "react-icons/fi";
+import { FiSearch, FiChevronLeft, FiChevronRight, FiFilter } from "react-icons/fi";
 
 // Components
 import QuizCard from "../../components/QuizCard";
@@ -22,8 +21,7 @@ function useDebounce(value, delay = 400) {
 }
 
 const Home = () => {
-  const { user, logout } = useAuth();
-  const { darkMode, toggleTheme } = useTheme();
+  const { user } = useAuth();
   const [quizzes, setQuizzes] = useState([]);
   const [myQuizzes, setMyQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +43,6 @@ const Home = () => {
 
   const currentUser = user?.user;
   const isTeacher = currentUser?.role === 'TEACHER' || currentUser?.is_teacher;
-  const isAdmin = currentUser?.role === 'ADMIN';
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -118,11 +115,7 @@ const Home = () => {
     setPage(0);
   }, [debouncedSearch, selectedCategory, selectedDifficulty, selectedTag]);
 
-  const handleLogout = () => {
-    logout();
-    toast.success("Logged out successfully");
-    navigate("/");
-  };
+
 
   const handleQuizClick = (quizId) => {
     navigate(`/quiz/${quizId}`);
@@ -144,58 +137,8 @@ const Home = () => {
   const totalQuestions = quizzes.reduce((acc, quiz) => acc + (quiz.questionCount || quiz.questions?.length || 0), 0);
 
   return (
-    <div className="min-h-screen bg-[color:var(--bg-primary)]">
-      {/* Header */}
-      <header className="flex justify-between items-center px-6 py-3 bg-[color:var(--bg-card)] border-b border-[color:var(--border)] sticky top-0 z-[100]">
-        <div className="flex items-center">
-          <img src="/assets/kasoti-logo.png" alt="Kasoti" className="h-9 rounded object-contain" />
-        </div>
+    <div className="min-h-screen bg-[color:var(--bg-primary)] pt-2">
 
-        <div className="flex items-center gap-2">
-          <button
-            className="w-9 h-9 bg-transparent border border-[color:var(--border)] rounded cursor-pointer text-[color:var(--text-secondary)] text-base flex items-center justify-center transition-all duration-150 hover:bg-[color:var(--bg-hover)] hover:text-[color:var(--text-primary)]"
-            onClick={toggleTheme}
-            title="Toggle theme"
-          >
-            {darkMode ? <FiSun /> : <FiMoon />}
-          </button>
-          {(isTeacher || isAdmin) && (
-            <button
-              className="hidden md:block py-2 px-3.5 bg-transparent border border-[color:var(--border)] text-[color:var(--text-secondary)] rounded font-medium text-[13px] cursor-pointer transition-all duration-150 hover:bg-[color:var(--accent-light)] hover:text-[color:var(--accent)] hover:border-[color:var(--accent)]"
-              onClick={() => navigate('/dashboard')}
-            >
-              Dashboard
-            </button>
-          )}
-          {isAdmin && (
-            <button
-              className="hidden md:block py-2 px-3.5 bg-transparent border border-[color:var(--border)] text-[color:var(--text-secondary)] rounded font-medium text-[13px] cursor-pointer transition-all duration-150 hover:bg-[color:var(--accent-light)] hover:text-[color:var(--accent)] hover:border-[color:var(--accent)]"
-              onClick={() => navigate('/admin')}
-            >
-              Admin
-            </button>
-          )}
-          {currentUser && (
-            <div
-              className="flex items-center gap-2 py-1.5 px-3 rounded cursor-pointer transition-all duration-150 hover:bg-[color:var(--bg-hover)]"
-              onClick={() => navigate('/profile')}
-            >
-              <div className="w-[30px] h-[30px] bg-[color:var(--accent)] rounded-full flex items-center justify-center text-white font-semibold text-[13px]">
-                {currentUser.username?.charAt(0).toUpperCase()}
-              </div>
-              <span className="hidden md:inline text-[color:var(--text-primary)] font-medium text-[13px]">{currentUser.username}</span>
-              {isTeacher && <span className="bg-[color:var(--warning-light)] text-[color:var(--warning)] py-0.5 px-2 rounded-full text-[10px] font-semibold uppercase tracking-wide">Teacher</span>}
-              {isAdmin && <span className="bg-[color:var(--warning-light)] text-[color:var(--warning)] py-0.5 px-2 rounded-full text-[10px] font-semibold uppercase tracking-wide">Admin</span>}
-            </div>
-          )}
-          <button
-            className="py-2 px-4 bg-transparent border border-[color:var(--border)] text-[color:var(--text-secondary)] rounded font-medium text-[13px] cursor-pointer transition-all duration-150 hover:bg-[color:var(--danger-light)] hover:text-[color:var(--danger)] hover:border-[color:var(--danger)]"
-            onClick={handleLogout}
-          >
-            Logout
-          </button>
-        </div>
-      </header>
 
       {/* Hero Section */}
       <section className="text-center pt-12 pb-4 px-6 md:pt-12 md:pb-4">
@@ -227,7 +170,7 @@ const Home = () => {
             </Link>
           </div>
           {myQuizzesLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1, 2, 3].map((n) => (
                 <QuizSkeleton key={n} />
               ))}
@@ -245,7 +188,7 @@ const Home = () => {
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {myQuizzes.map((quiz) => (
                 <QuizCard
                   key={quiz.id}
@@ -279,134 +222,139 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Category Filter */}
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {categories.map((category) => (
-            <button
-              key={category}
-              className={`py-1.5 px-3.5 bg-transparent border rounded-full font-sans text-xs font-medium cursor-pointer transition-all duration-150 ${
-                selectedCategory === category
-                  ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
-                  : 'border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]'
-              }`}
-              onClick={() => setSelectedCategory(category)}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-
-        {/* Difficulty Filter */}
-        <div className="flex items-center gap-2 mb-5">
-          <FiFilter className="text-[color:var(--text-muted)] text-sm" />
-          <span className="text-xs text-[color:var(--text-muted)]">Difficulty:</span>
-          {['All', 'EASY', 'MEDIUM', 'HARD'].map((d) => (
-            <button
-              key={d}
-              className={`py-1 px-3 border rounded-full font-sans text-[11px] font-medium cursor-pointer transition-all duration-150 ${
-                selectedDifficulty === d
-                  ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
-                  : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]'
-              }`}
-              onClick={() => setSelectedDifficulty(d)}
-            >
-              {d === 'All' ? 'All' : d.charAt(0) + d.slice(1).toLowerCase()}
-            </button>
-          ))}
-        </div>
-
-        {/* Tags Filter */}
-        {availableTags.length > 0 && (
-          <div className="flex items-center gap-2 mb-5 flex-wrap">
-            <FiFilter className="text-[color:var(--text-muted)] text-sm" />
-            <span className="text-xs text-[color:var(--text-muted)]">Tags:</span>
-            <button
-              className={`py-1 px-3 border rounded-full font-sans text-[11px] font-medium cursor-pointer transition-all duration-150 ${
-                !selectedTag
-                  ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
-                  : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]'
-              }`}
-              onClick={() => setSelectedTag('')}
-            >
-              All
-            </button>
-            {availableTags.map((tag) => (
+        {/* Filters */}
+        <div className="flex flex-col gap-2.5 mb-6 bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-xl p-4">
+          {/* Category Filter */}
+          <div className="flex flex-wrap gap-1.5">
+            {categories.map((category) => (
               <button
-                key={tag}
-                className={`py-1 px-3 border rounded-full font-sans text-[11px] font-medium cursor-pointer transition-all duration-150 ${
-                  selectedTag === tag
-                    ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
-                    : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]'
-                }`}
-                onClick={() => setSelectedTag(tag)}
+                key={category}
+                className={`py-1.5 px-3.5 border rounded-full font-sans text-xs font-medium cursor-pointer transition-all duration-150 ${selectedCategory === category
+                  ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
+                  : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]'
+                  }`}
+                onClick={() => setSelectedCategory(category)}
               >
-                {tag}
+                {category}
               </button>
             ))}
           </div>
-        )}
 
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-            {[1, 2, 3, 4, 5, 6].map((n) => (
-              <QuizSkeleton key={n} />
-            ))}
-          </div>
-        ) : quizzes.length === 0 ? (
-          <div className="text-center py-[60px] px-5 bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-lg">
-            <div className="text-[40px] mb-3">📚</div>
-            <h3 className="text-base text-[color:var(--text-primary)] mb-1.5">
-              {searchQuery || selectedCategory !== 'All'
-                ? "No quizzes found"
-                : "No quizzes yet"}
-            </h3>
-            <p className="text-[color:var(--text-secondary)] text-[13px] mb-5">
-              {searchQuery || selectedCategory !== 'All'
-                ? "Try adjusting your search or filter."
-                : "Check back later for new quizzes."}
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-              {quizzes.map((quiz) => (
-                <QuizCard
-                  key={quiz.id}
-                  quiz={quiz}
-                  onClick={() => handleQuizClick(quiz.id)}
-                  onDelete={handleDeleteQuiz}
-                  onPublish={() => fetchQuizzes()}
-                  onClose={() => fetchQuizzes()}
-                />
-              ))}
+          {/* Difficulty + Tags */}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <div className="flex items-center gap-1.5">
+              <FiFilter className="text-[color:var(--text-muted)] text-xs" />
+              <span className="text-[11px] text-[color:var(--text-muted)] font-medium">Difficulty:</span>
+              <div className="flex gap-1">
+                {['All', 'EASY', 'MEDIUM', 'HARD'].map((d) => (
+                  <button
+                    key={d}
+                    className={`py-1 px-2.5 border rounded-full font-sans text-[11px] font-medium cursor-pointer transition-all duration-150 ${selectedDifficulty === d
+                      ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
+                      : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]'
+                      }`}
+                    onClick={() => setSelectedDifficulty(d)}
+                  >
+                    {d === 'All' ? 'All' : d.charAt(0) + d.slice(1).toLowerCase()}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-1.5 mt-7">
-                <button
-                  className="flex items-center gap-1 py-2 px-3.5 bg-[color:var(--bg-card)] border border-[color:var(--border)] text-[color:var(--text-secondary)] rounded font-sans text-[13px] cursor-pointer transition-all duration-150 hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[color:var(--border)] disabled:hover:text-[color:var(--text-secondary)]"
-                  onClick={() => setPage(p => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                >
-                  <FiChevronLeft /> Prev
-                </button>
-                <span className="text-[color:var(--text-muted)] text-[13px] px-3">
-                  Page {page + 1} of {totalPages}
-                </span>
-                <button
-                  className="flex items-center gap-1 py-2 px-3.5 bg-[color:var(--bg-card)] border border-[color:var(--border)] text-[color:var(--text-secondary)] rounded font-sans text-[13px] cursor-pointer transition-all duration-150 hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[color:var(--border)] disabled:hover:text-[color:var(--text-secondary)]"
-                  onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-                  disabled={page >= totalPages - 1}
-                >
-                  Next <FiChevronRight />
-                </button>
+            {availableTags.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <FiFilter className="text-[color:var(--text-muted)] text-xs" />
+                <span className="text-[11px] text-[color:var(--text-muted)] font-medium">Tags:</span>
+                <div className="flex flex-wrap gap-1">
+                  <button
+                    className={`py-1 px-2.5 border rounded-full font-sans text-[11px] font-medium cursor-pointer transition-all duration-150 ${!selectedTag
+                      ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
+                      : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]'
+                      }`}
+                    onClick={() => setSelectedTag('')}
+                  >
+                    All
+                  </button>
+                  {availableTags.map((tag) => (
+                    <button
+                      key={tag}
+                      className={`py-1 px-2.5 border rounded-full font-sans text-[11px] font-medium cursor-pointer transition-all duration-150 ${selectedTag === tag
+                        ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
+                        : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]'
+                        }`}
+                      onClick={() => setSelectedTag(tag)}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
-          </>
-        )}
-      </section>
-    </div>
+          </div>
+        </div>
+        {
+          loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <QuizSkeleton key={n} />
+              ))}
+            </div>
+          ) : quizzes.length === 0 ? (
+            <div className="text-center py-[60px] px-5 bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-lg">
+              <div className="text-[40px] mb-3">📚</div>
+              <h3 className="text-base text-[color:var(--text-primary)] mb-1.5">
+                {searchQuery || selectedCategory !== 'All'
+                  ? "No quizzes found"
+                  : "No quizzes yet"}
+              </h3>
+              <p className="text-[color:var(--text-secondary)] text-[13px] mb-5">
+                {searchQuery || selectedCategory !== 'All'
+                  ? "Try adjusting your search or filter."
+                  : "Check back later for new quizzes."}
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {quizzes.map((quiz) => (
+                  <QuizCard
+                    key={quiz.id}
+                    quiz={quiz}
+                    onClick={() => handleQuizClick(quiz.id)}
+                    onDelete={handleDeleteQuiz}
+                    onPublish={() => fetchQuizzes()}
+                    onClose={() => fetchQuizzes()}
+                  />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-1.5 mt-7">
+                  <button
+                    className="flex items-center gap-1 py-2 px-3.5 bg-[color:var(--bg-card)] border border-[color:var(--border)] text-[color:var(--text-secondary)] rounded font-sans text-[13px] cursor-pointer transition-all duration-150 hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[color:var(--border)] disabled:hover:text-[color:var(--text-secondary)]"
+                    onClick={() => setPage(p => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                  >
+                    <FiChevronLeft /> Prev
+                  </button>
+                  <span className="text-[color:var(--text-muted)] text-[13px] px-3">
+                    Page {page + 1} of {totalPages}
+                  </span>
+                  <button
+                    className="flex items-center gap-1 py-2 px-3.5 bg-[color:var(--bg-card)] border border-[color:var(--border)] text-[color:var(--text-secondary)] rounded font-sans text-[13px] cursor-pointer transition-all duration-150 hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[color:var(--border)] disabled:hover:text-[color:var(--text-secondary)]"
+                    onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                    disabled={page >= totalPages - 1}
+                  >
+                    Next <FiChevronRight />
+                  </button>
+                </div>
+              )}
+            </>
+          )
+        }
+      </section >
+    </div >
   );
 };
 
