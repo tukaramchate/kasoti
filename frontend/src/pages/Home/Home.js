@@ -22,18 +22,15 @@ function useDebounce(value, delay = 400) {
 
 const Home = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [quizzes, setQuizzes] = useState([]);
   const [myQuizzes, setMyQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [myQuizzesLoading, setMyQuizzesLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedDifficulty, setSelectedDifficulty] = useState('All');
-  const [selectedTag, setSelectedTag] = useState('');
-  const [availableTags, setAvailableTags] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery);
   const [categories, setCategories] = useState(['All']);
-  const navigate = useNavigate();
 
   // Pagination state
   const [page, setPage] = useState(0);
@@ -53,16 +50,7 @@ const Home = () => {
         console.error("Error fetching categories:", error);
       }
     };
-    const fetchTags = async () => {
-      try {
-        const response = await quizAPI.getTags();
-        setAvailableTags(response.data || []);
-      } catch (error) {
-        console.error("Error fetching tags:", error);
-      }
-    };
     fetchCategories();
-    fetchTags();
   }, []);
 
   const fetchMyQuizzes = useCallback(async () => {
@@ -85,7 +73,7 @@ const Home = () => {
   const fetchQuizzes = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await quizAPI.getAllQuizzes(page, pageSize, debouncedSearch, selectedCategory, selectedDifficulty, selectedTag);
+      const response = await quizAPI.getAllQuizzes(page, pageSize, debouncedSearch, selectedCategory);
 
       // Handle paginated response
       if (response.data.content) {
@@ -104,7 +92,7 @@ const Home = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch, selectedCategory, selectedDifficulty, selectedTag]);
+  }, [page, debouncedSearch, selectedCategory]);
 
   useEffect(() => {
     fetchQuizzes();
@@ -113,8 +101,7 @@ const Home = () => {
   // Reset to first page when search or category changes
   useEffect(() => {
     setPage(0);
-  }, [debouncedSearch, selectedCategory, selectedDifficulty, selectedTag]);
-
+  }, [debouncedSearch, selectedCategory]);
 
 
   const handleQuizClick = (quizId) => {
@@ -137,9 +124,7 @@ const Home = () => {
   const totalQuestions = quizzes.reduce((acc, quiz) => acc + (quiz.questionCount || quiz.questions?.length || 0), 0);
 
   return (
-    <div className="min-h-screen bg-[color:var(--bg-primary)] pt-2">
-
-
+    <div className="min-h-screen bg-[color:var(--bg-primary)]">
       {/* Hero Section */}
       <section className="text-center pt-12 pb-4 px-6 md:pt-12 md:pb-4">
         <h1 className="text-[28px] md:text-[28px] font-bold text-[color:var(--text-primary)] mb-1.5">
@@ -170,7 +155,7 @@ const Home = () => {
             </Link>
           </div>
           {myQuizzesLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
               {[1, 2, 3].map((n) => (
                 <QuizSkeleton key={n} />
               ))}
@@ -188,7 +173,7 @@ const Home = () => {
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
               {myQuizzes.map((quiz) => (
                 <QuizCard
                   key={quiz.id}
@@ -222,139 +207,85 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col gap-2.5 mb-6 bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-xl p-4">
-          {/* Category Filter */}
-          <div className="flex flex-wrap gap-1.5">
-            {categories.map((category) => (
-              <button
-                key={category}
-                className={`py-1.5 px-3.5 border rounded-full font-sans text-xs font-medium cursor-pointer transition-all duration-150 ${selectedCategory === category
-                  ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
-                  : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]'
-                  }`}
-                onClick={() => setSelectedCategory(category)}
-              >
-                {category}
-              </button>
+        {/* Subject Filter */}
+        <div className="flex items-center gap-2 mb-5 flex-wrap">
+          <FiFilter className="text-[color:var(--text-muted)] text-sm flex-shrink-0" />
+          <span className="text-xs font-medium text-[color:var(--text-muted)] flex-shrink-0">Subject:</span>
+          {categories.map((category) => (
+            <button
+              key={category}
+              className={`py-1 px-3.5 border rounded-full font-sans text-xs font-medium cursor-pointer transition-all duration-150 ${selectedCategory === category
+                ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)] shadow-sm'
+                : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] hover:bg-[color:var(--accent-light)]'
+                }`}
+              onClick={() => setSelectedCategory(category)}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <QuizSkeleton key={n} />
             ))}
           </div>
-
-          {/* Difficulty + Tags */}
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            <div className="flex items-center gap-1.5">
-              <FiFilter className="text-[color:var(--text-muted)] text-xs" />
-              <span className="text-[11px] text-[color:var(--text-muted)] font-medium">Difficulty:</span>
-              <div className="flex gap-1">
-                {['All', 'EASY', 'MEDIUM', 'HARD'].map((d) => (
-                  <button
-                    key={d}
-                    className={`py-1 px-2.5 border rounded-full font-sans text-[11px] font-medium cursor-pointer transition-all duration-150 ${selectedDifficulty === d
-                      ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
-                      : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]'
-                      }`}
-                    onClick={() => setSelectedDifficulty(d)}
-                  >
-                    {d === 'All' ? 'All' : d.charAt(0) + d.slice(1).toLowerCase()}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {availableTags.length > 0 && (
-              <div className="flex items-center gap-1.5">
-                <FiFilter className="text-[color:var(--text-muted)] text-xs" />
-                <span className="text-[11px] text-[color:var(--text-muted)] font-medium">Tags:</span>
-                <div className="flex flex-wrap gap-1">
-                  <button
-                    className={`py-1 px-2.5 border rounded-full font-sans text-[11px] font-medium cursor-pointer transition-all duration-150 ${!selectedTag
-                      ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
-                      : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]'
-                      }`}
-                    onClick={() => setSelectedTag('')}
-                  >
-                    All
-                  </button>
-                  {availableTags.map((tag) => (
-                    <button
-                      key={tag}
-                      className={`py-1 px-2.5 border rounded-full font-sans text-[11px] font-medium cursor-pointer transition-all duration-150 ${selectedTag === tag
-                        ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
-                        : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]'
-                        }`}
-                      onClick={() => setSelectedTag(tag)}
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+        ) : quizzes.length === 0 ? (
+          <div className="text-center py-[60px] px-5 bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-lg">
+            <div className="text-[40px] mb-3">📚</div>
+            <h3 className="text-base text-[color:var(--text-primary)] mb-1.5">
+              {searchQuery || selectedCategory !== 'All'
+                ? "No quizzes found"
+                : "No quizzes yet"}
+            </h3>
+            <p className="text-[color:var(--text-secondary)] text-[13px] mb-5">
+              {searchQuery || selectedCategory !== 'All'
+                ? "Try adjusting your search or filter."
+                : "Check back later for new quizzes."}
+            </p>
           </div>
-        </div>
-        {
-          loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <QuizSkeleton key={n} />
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
+              {quizzes.map((quiz) => (
+                <QuizCard
+                  key={quiz.id}
+                  quiz={quiz}
+                  onClick={() => handleQuizClick(quiz.id)}
+                  onDelete={handleDeleteQuiz}
+                  onPublish={() => fetchQuizzes()}
+                  onClose={() => fetchQuizzes()}
+                />
               ))}
             </div>
-          ) : quizzes.length === 0 ? (
-            <div className="text-center py-[60px] px-5 bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-lg">
-              <div className="text-[40px] mb-3">📚</div>
-              <h3 className="text-base text-[color:var(--text-primary)] mb-1.5">
-                {searchQuery || selectedCategory !== 'All'
-                  ? "No quizzes found"
-                  : "No quizzes yet"}
-              </h3>
-              <p className="text-[color:var(--text-secondary)] text-[13px] mb-5">
-                {searchQuery || selectedCategory !== 'All'
-                  ? "Try adjusting your search or filter."
-                  : "Check back later for new quizzes."}
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {quizzes.map((quiz) => (
-                  <QuizCard
-                    key={quiz.id}
-                    quiz={quiz}
-                    onClick={() => handleQuizClick(quiz.id)}
-                    onDelete={handleDeleteQuiz}
-                    onPublish={() => fetchQuizzes()}
-                    onClose={() => fetchQuizzes()}
-                  />
-                ))}
-              </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-1.5 mt-7">
-                  <button
-                    className="flex items-center gap-1 py-2 px-3.5 bg-[color:var(--bg-card)] border border-[color:var(--border)] text-[color:var(--text-secondary)] rounded font-sans text-[13px] cursor-pointer transition-all duration-150 hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[color:var(--border)] disabled:hover:text-[color:var(--text-secondary)]"
-                    onClick={() => setPage(p => Math.max(0, p - 1))}
-                    disabled={page === 0}
-                  >
-                    <FiChevronLeft /> Prev
-                  </button>
-                  <span className="text-[color:var(--text-muted)] text-[13px] px-3">
-                    Page {page + 1} of {totalPages}
-                  </span>
-                  <button
-                    className="flex items-center gap-1 py-2 px-3.5 bg-[color:var(--bg-card)] border border-[color:var(--border)] text-[color:var(--text-secondary)] rounded font-sans text-[13px] cursor-pointer transition-all duration-150 hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[color:var(--border)] disabled:hover:text-[color:var(--text-secondary)]"
-                    onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-                    disabled={page >= totalPages - 1}
-                  >
-                    Next <FiChevronRight />
-                  </button>
-                </div>
-              )}
-            </>
-          )
-        }
-      </section >
-    </div >
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-1.5 mt-7">
+                <button
+                  className="flex items-center gap-1 py-2 px-3.5 bg-[color:var(--bg-card)] border border-[color:var(--border)] text-[color:var(--text-secondary)] rounded font-sans text-[13px] cursor-pointer transition-all duration-150 hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[color:var(--border)] disabled:hover:text-[color:var(--text-secondary)]"
+                  onClick={() => setPage(p => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                >
+                  <FiChevronLeft /> Prev
+                </button>
+                <span className="text-[color:var(--text-muted)] text-[13px] px-3">
+                  Page {page + 1} of {totalPages}
+                </span>
+                <button
+                  className="flex items-center gap-1 py-2 px-3.5 bg-[color:var(--bg-card)] border border-[color:var(--border)] text-[color:var(--text-secondary)] rounded font-sans text-[13px] cursor-pointer transition-all duration-150 hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[color:var(--border)] disabled:hover:text-[color:var(--text-secondary)]"
+                  onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                  disabled={page >= totalPages - 1}
+                >
+                  Next <FiChevronRight />
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </section>
+    </div>
   );
 };
 

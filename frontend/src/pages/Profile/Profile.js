@@ -11,7 +11,7 @@ import { FiBookOpen, FiActivity, FiAward, FiTrendingUp, FiEdit2, FiLock, FiSave,
 const Profile = () => {
     const { user, setUser } = useAuth();
     const navigate = useNavigate();
-    const [data, setData] = useState([]);
+    const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
 
     // Pagination for student attempts
@@ -152,17 +152,18 @@ const Profile = () => {
     }
 
     // Calculate Stats
-    const totalItems = data.length;
+    const safeData = data || [];
+    const totalItems = safeData.length;
 
     let secondaryStat, tertiaryStat;
     if (isTeacher) {
-        secondaryStat = data.reduce((acc, quiz) => acc + (quiz.questionCount || quiz.questions?.length || 0), 0);
+        secondaryStat = safeData.reduce((acc, quiz) => acc + (quiz.questionCount || quiz.questions?.length || 0), 0);
         tertiaryStat = null;
     } else {
         secondaryStat = totalItems > 0
-            ? Math.round(data.reduce((acc, score) => acc + (score.score || 0), 0) / totalItems)
+            ? Math.round(safeData.reduce((acc, score) => acc + (score.score || 0), 0) / totalItems)
             : 0;
-        tertiaryStat = data.filter(s => s.score >= 80).length;
+        tertiaryStat = safeData.filter(s => s.score >= 80).length;
     }
 
     const getScoreClass = (score) => {
@@ -347,10 +348,10 @@ const Profile = () => {
                 </h3>
 
                 <div className="flex flex-col gap-2">
-                    {data.length === 0 ? (
+                    {safeData.length === 0 ? (
                         <p className="text-center py-9 px-5 text-[color:var(--text-muted)] text-[13px]">No activity yet.</p>
                     ) : (
-                        data.map((item, index) => (
+                        safeData.map((item, index) => (
                             <div
                                 key={item.id || index}
                                 className={`flex flex-col sm:flex-row justify-between items-center gap-2 p-3.5 bg-[color:var(--bg-primary)] border border-[color:var(--border)] rounded transition-all duration-150 hover:border-[color:var(--accent-subtle)] text-center sm:text-left ${isTeacher ? 'cursor-pointer' : ''}`}

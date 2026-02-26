@@ -46,7 +46,9 @@ const Admin = () => {
   // Confirm dialog
   const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null });
 
-  const [loading, setLoading] = useState(true);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [quizzesLoading, setQuizzesLoading] = useState(false);
+  const [attemptsLoading, setAttemptsLoading] = useState(false);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -58,7 +60,7 @@ const Admin = () => {
   }, []);
 
   const fetchUsers = useCallback(async () => {
-    setLoading(true);
+    setUsersLoading(true);
     try {
       let res;
       if (roleFilter === "ALL") {
@@ -73,12 +75,12 @@ const Admin = () => {
       console.error("Error fetching users:", error);
       toast.error("Failed to load users");
     } finally {
-      setLoading(false);
+      setUsersLoading(false);
     }
   }, [userPage, roleFilter]);
 
   const fetchQuizzes = useCallback(async () => {
-    setLoading(true);
+    setQuizzesLoading(true);
     try {
       const res = await adminAPI.getQuizzes(quizPage, 15);
       const data = res.data;
@@ -88,12 +90,12 @@ const Admin = () => {
       console.error("Error fetching quizzes:", error);
       toast.error("Failed to load quizzes");
     } finally {
-      setLoading(false);
+      setQuizzesLoading(false);
     }
   }, [quizPage]);
 
   const fetchAttempts = useCallback(async () => {
-    setLoading(true);
+    setAttemptsLoading(true);
     try {
       const res = await adminAPI.getAttempts(attemptPage, 15);
       const data = res.data;
@@ -103,7 +105,7 @@ const Admin = () => {
       console.error("Error fetching attempts:", error);
       toast.error("Failed to load attempts");
     } finally {
-      setLoading(false);
+      setAttemptsLoading(false);
     }
   }, [attemptPage]);
 
@@ -270,7 +272,7 @@ const Admin = () => {
             </div>
           </div>
 
-          {loading ? (
+          {usersLoading ? (
             <div className="flex items-center justify-center min-h-[200px]">
               <div className="w-9 h-9 border-[3px] border-[color:var(--border)] border-t-[color:var(--accent)] rounded-full animate-spin"></div>
             </div>
@@ -364,7 +366,7 @@ const Admin = () => {
       {/* Quizzes Tab */}
       {tab === "quizzes" && (
         <div className="bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-lg p-5 shadow-sm">
-          {loading ? (
+          {quizzesLoading ? (
             <div className="flex items-center justify-center min-h-[200px]">
               <div className="w-9 h-9 border-[3px] border-[color:var(--border)] border-t-[color:var(--accent)] rounded-full animate-spin"></div>
             </div>
@@ -445,7 +447,7 @@ const Admin = () => {
       {/* Attempts Tab */}
       {tab === "attempts" && (
         <div className="bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-lg p-5 shadow-sm">
-          {loading ? (
+          {attemptsLoading ? (
             <div className="flex items-center justify-center min-h-[200px]">
               <div className="w-9 h-9 border-[3px] border-[color:var(--border)] border-t-[color:var(--accent)] rounded-full animate-spin"></div>
             </div>

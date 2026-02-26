@@ -9,7 +9,7 @@ const PasswordInput = ({ className = "", ...props }) => {
       <input
         {...props}
         type={showPassword ? "text" : "password"}
-        className={className}
+        className={`${className} pr-10`}
       />
       <button
         type="button"
