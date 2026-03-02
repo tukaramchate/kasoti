@@ -92,6 +92,13 @@ public class Answer {
     @Column(name = "evaluation_comment", columnDefinition = "TEXT")
     private String evaluationComment;
 
+    /**
+     * Time spent (seconds) on this question by the student.
+     * Tracked per-question for analytics.
+     */
+    @Column(name = "time_spent_seconds")
+    private Integer timeSpentSeconds;
+
     @Override
     public boolean equals(Object o) {
         if (this == o)

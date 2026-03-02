@@ -80,7 +80,8 @@ public class EvaluationService {
         int newScore = totalMarks > 0 ? (int) Math.round((newMarksObtained * 100.0) / totalMarks) : 0;
         attempt.setScore(newScore);
 
-        // If marks awarded > 0 and this was previously not counted as correct, increment correct count
+        // If marks awarded > 0 and this was previously not counted as correct,
+        // increment correct count
         if (marks > 0 && previousMarks == 0) {
             attempt.setCorrectAnswers(
                     (attempt.getCorrectAnswers() != null ? attempt.getCorrectAnswers() : 0) + 1);
@@ -104,16 +105,30 @@ public class EvaluationService {
 
     /**
      * Get all pending DESCRIPTIVE answers for a quiz (for teacher evaluation view).
+     * Ownership is always verified — even when the list is empty — to prevent IDOR.
      */
     public List<AnswerDTO> getPendingAnswers(Long quizId, UserPrincipal principal) {
-        // Validate ownership inline — no Quiz entity needed, we filter at DB level
+        // ✅ Always fetch the quiz and verify ownership FIRST, before loading answers.
+        // Previously the check was only inside `if (!pending.isEmpty())` — a teacher
+        // could
+        // call GET /quizzes/{anyId}/pending-evaluations and always get 200 [] with no
+        // auth check.
         List<Answer> pending = answerRepository.findPendingDescriptiveByQuizId(quizId);
 
+        // Determine the quiz owner: prefer from the loaded answers, else load from
+        // repository
+        Long quizOwnerId;
         if (!pending.isEmpty()) {
-            Quiz quiz = pending.get(0).getAttempt().getQuiz();
-            if (!principal.isAdmin() && !quiz.getCreatedBy().getId().equals(principal.getId())) {
-                throw new ForbiddenException("You can only view pending answers for your own quizzes");
-            }
+            quizOwnerId = pending.get(0).getAttempt().getQuiz().getCreatedBy().getId();
+        } else {
+            // No pending answers found — still need to enforce ownership
+            quizOwnerId = answerRepository.findQuizOwnerIdByQuizId(quizId)
+                    .orElseThrow(
+                            () -> new com.tukaram.kasoti.exception.ResourceNotFoundException("Quiz", "id", quizId));
+        }
+
+        if (!principal.isAdmin() && !quizOwnerId.equals(principal.getId())) {
+            throw new ForbiddenException("You can only view pending answers for your own quizzes");
         }
 
         return pending.stream().map(this::convertToDTO).toList();

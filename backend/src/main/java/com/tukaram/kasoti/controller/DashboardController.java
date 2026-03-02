@@ -2,8 +2,10 @@ package com.tukaram.kasoti.controller;
 
 import com.tukaram.kasoti.dto.AttemptSummaryDTO;
 import com.tukaram.kasoti.dto.DashboardStatsDTO;
+import com.tukaram.kasoti.dto.QuizAnalyticsDTO;
 import com.tukaram.kasoti.dto.QuizStatisticsDTO;
 import com.tukaram.kasoti.security.UserPrincipal;
+import com.tukaram.kasoti.service.AnalyticsService;
 import com.tukaram.kasoti.service.DashboardService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +33,7 @@ import lombok.RequiredArgsConstructor;
 public class DashboardController {
 
     private final DashboardService dashboardService;
+    private final AnalyticsService analyticsService;
 
     @Operation(summary = "Get dashboard stats", description = "Returns summary stats for the teacher's quizzes")
     @ApiResponse(responseCode = "200", description = "Dashboard statistics")
@@ -66,5 +69,14 @@ public class DashboardController {
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(defaultValue = "10") int limit) {
         return ResponseEntity.ok(dashboardService.getRecentAttempts(principal.getId(), limit));
+    }
+
+    @Operation(summary = "Get quiz analytics", description = "Question-level analytics for a specific quiz")
+    @ApiResponse(responseCode = "200", description = "Quiz analytics with per-question breakdowns")
+    @GetMapping("/quizzes/{id}/analytics")
+    public ResponseEntity<QuizAnalyticsDTO> getQuizAnalytics(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(analyticsService.getQuizAnalytics(id, principal.getId()));
     }
 }

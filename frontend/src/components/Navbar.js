@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/UserContext";
 import { useTheme } from "../context/ThemeContext";
 import { FiMoon, FiSun, FiLogOut, FiHome, FiGrid, FiShield } from "react-icons/fi";
+import { motion } from "framer-motion";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -19,8 +20,14 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-[color:var(--bg-card)]/95 backdrop-blur-md border-b border-[color:var(--border)]">
-      <div className="max-w-[1280px] mx-auto flex items-center justify-between px-4 sm:px-6 h-14">
+    <motion.nav
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className="sticky top-0 z-50 bg-[color:var(--bg-card)]/80 backdrop-blur-2xl border-b border-[color:var(--border)] shadow-soft"
+    >
+      <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[color:var(--accent)]/30 to-transparent" />
+      <div className="max-w-[1280px] mx-auto flex items-center justify-between px-4 sm:px-6 h-16 relative">
         {/* Left: Logo */}
         <Link to="/home" className="flex items-center gap-2 no-underline shrink-0">
           <img
@@ -100,7 +107,7 @@ const Navbar = () => {
           </button>
         </div>
       </div>
-    </nav>
+    </motion.nav>
   );
 };
 

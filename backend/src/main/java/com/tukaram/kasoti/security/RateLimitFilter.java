@@ -4,10 +4,12 @@ import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Simple in-memory rate limiter for authentication endpoints.
- * Limits requests to 10 per minute per IP address.
+ * Limits requests to MAX_REQUESTS per TIME_WINDOW_MS per IP address.
+ * Uses AtomicInteger for count to prevent race conditions under concurrent requests.
  */
 public class RateLimitFilter implements Filter {
 
@@ -24,16 +26,17 @@ public class RateLimitFilter implements Filter {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         String clientIP = getClientIP(httpRequest);
 
+        // compute() is atomic per-key, and AtomicInteger.incrementAndGet() is thread-safe
         RateLimitInfo info = requestCounts.compute(clientIP, (key, existing) -> {
             long now = System.currentTimeMillis();
             if (existing == null || now - existing.windowStart > TIME_WINDOW_MS) {
-                return new RateLimitInfo(now, 1);
+                return new RateLimitInfo(now);
             }
-            existing.count++;
+            existing.count.incrementAndGet(); // ✅ thread-safe atomic increment
             return existing;
         });
 
-        if (info.count > MAX_REQUESTS) {
+        if (info.count.get() > MAX_REQUESTS) {
             HttpServletResponse httpResponse = (HttpServletResponse) response;
             httpResponse.setStatus(429); // Too Many Requests
             httpResponse.setContentType("application/json");
@@ -52,7 +55,6 @@ public class RateLimitFilter implements Filter {
 
     /**
      * Get client IP — only uses remoteAddr to prevent X-Forwarded-For spoofing.
-     * If behind a trusted reverse proxy, configure the proxy IP and validate the header.
      */
     private String getClientIP(HttpServletRequest request) {
         // Do NOT trust X-Forwarded-For from unknown sources — it can be spoofed.
@@ -62,7 +64,6 @@ public class RateLimitFilter implements Filter {
 
     /**
      * Remove expired entries to prevent unbounded memory growth.
-     * Called periodically from the filter itself on every Nth request.
      */
     public void cleanup() {
         long now = System.currentTimeMillis();
@@ -71,12 +72,12 @@ public class RateLimitFilter implements Filter {
     }
 
     private static class RateLimitInfo {
-        long windowStart;
-        int count;
+        final long windowStart;
+        final AtomicInteger count; // ✅ was plain int — race condition fixed
 
-        RateLimitInfo(long windowStart, int count) {
+        RateLimitInfo(long windowStart) {
             this.windowStart = windowStart;
-            this.count = count;
+            this.count = new AtomicInteger(1);
         }
     }
 }

@@ -169,15 +169,23 @@ const QuizData = () => {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [startTime, setStartTime] = useState(null);
 
+  // Per-question time tracking (analytics)
+  const [timePerQuestion, setTimePerQuestion] = useState({});
+  const questionStartTimeRef = useRef(null);
+
   // Refs to avoid stale closures in timer auto-submit
   const selectedAnswersRef = useRef(selectedAnswers);
   const multiAnswersRef = useRef(multiAnswers);
   const textAnswersRef = useRef(textAnswers);
   const startTimeRef = useRef(startTime);
+  const timePerQuestionRef = useRef(timePerQuestion);
+  const currentQuestionIndexRef = useRef(currentQuestionIndex);
   useEffect(() => { selectedAnswersRef.current = selectedAnswers; }, [selectedAnswers]);
   useEffect(() => { multiAnswersRef.current = multiAnswers; }, [multiAnswers]);
   useEffect(() => { textAnswersRef.current = textAnswers; }, [textAnswers]);
   useEffect(() => { startTimeRef.current = startTime; }, [startTime]);
+  useEffect(() => { timePerQuestionRef.current = timePerQuestion; }, [timePerQuestion]);
+  useEffect(() => { currentQuestionIndexRef.current = currentQuestionIndex; }, [currentQuestionIndex]);
 
   const checkAttemptAndFetch = useCallback(async () => {
     try {
@@ -198,6 +206,7 @@ const QuizData = () => {
       setTimeLeft(timeLimitMinutes * 60);
       setIsTimerRunning(true);
       setStartTime(Date.now());
+      questionStartTimeRef.current = Date.now();
     } catch (error) {
       console.error("Error:", error);
       if (error.response?.status === 403) {
@@ -213,6 +222,28 @@ const QuizData = () => {
 
   useEffect(() => { checkAttemptAndFetch(); }, [checkAttemptAndFetch]);
 
+  /** Record elapsed time for the current question and reset the per-question timer. */
+  const recordQuestionTime = useCallback((questions, qIndex, tpqState) => {
+    if (!questionStartTimeRef.current || !questions?.length) return tpqState;
+    const qId = questions[qIndex]?.id;
+    if (qId == null) return tpqState;
+    const elapsed = Math.floor((Date.now() - questionStartTimeRef.current) / 1000);
+    questionStartTimeRef.current = Date.now();
+    const updated = { ...tpqState, [qId]: (tpqState[qId] || 0) + elapsed };
+    return updated;
+  }, []);
+
+  /** Navigate to a different question while tracking time. */
+  const navigateToQuestion = useCallback((newIndex) => {
+    if (!quizDetails?.questions) return;
+    setTimePerQuestion(prev => {
+      const updated = recordQuestionTime(quizDetails.questions, currentQuestionIndex, prev);
+      timePerQuestionRef.current = updated;
+      return updated;
+    });
+    setCurrentQuestionIndex(newIndex);
+  }, [quizDetails, currentQuestionIndex, recordQuestionTime]);
+
   const handleSubmitQuiz = useCallback(async (isAutoSubmit = false) => {
     setIsTimerRunning(false);
     // Use refs for auto-submit (timer) to avoid stale closures
@@ -220,6 +251,17 @@ const QuizData = () => {
     const multiAns = isAutoSubmit ? multiAnswersRef.current : multiAnswers;
     const textAns = isAutoSubmit ? textAnswersRef.current : textAnswers;
     const start = isAutoSubmit ? startTimeRef.current : startTime;
+
+    // Record time for the last question being viewed
+    let finalTimePerQ = isAutoSubmit ? timePerQuestionRef.current : timePerQuestion;
+    const qIdx = isAutoSubmit ? currentQuestionIndexRef.current : currentQuestionIndex;
+    if (questionStartTimeRef.current && quizDetails?.questions?.length) {
+      const qId = quizDetails.questions[qIdx]?.id;
+      if (qId != null) {
+        const elapsed = Math.floor((Date.now() - questionStartTimeRef.current) / 1000);
+        finalTimePerQ = { ...finalTimePerQ, [qId]: (finalTimePerQ[qId] || 0) + elapsed };
+      }
+    }
 
     const timeTakenSeconds = start ? Math.floor((Date.now() - start) / 1000) : 0;
 
@@ -244,7 +286,7 @@ const QuizData = () => {
     });
 
     try {
-      const response = await quizAPI.submitQuiz(id, answerMap, timeTakenSeconds, multiAnsMap, textAnsMap);
+      const response = await quizAPI.submitQuiz(id, answerMap, timeTakenSeconds, multiAnsMap, textAnsMap, finalTimePerQ);
       setResultData(response.data);
       setShowResults(true);
       toast[isAutoSubmit ? 'info' : 'success'](isAutoSubmit ? "Time's up! Quiz submitted." : "Quiz completed! 🎉");
@@ -252,7 +294,7 @@ const QuizData = () => {
       console.error("Error submitting quiz:", error);
       toast.error(error.response?.data?.message || "Failed to submit quiz");
     }
-  }, [id, selectedAnswers, multiAnswers, textAnswers, startTime]);
+  }, [id, selectedAnswers, multiAnswers, textAnswers, startTime, timePerQuestion, quizDetails, currentQuestionIndex]);
 
   useEffect(() => {
     let timer;
@@ -580,7 +622,7 @@ const QuizData = () => {
             <div className="flex justify-between gap-3 max-sm:flex-col">
               <button
                 className="flex items-center gap-1.5 py-3 px-5 text-[13px] font-medium rounded-lg cursor-pointer transition-all bg-[color:var(--bg-card)] border border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed max-sm:justify-center"
-                onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
+                onClick={() => navigateToQuestion(Math.max(0, currentQuestionIndex - 1))}
                 disabled={currentQuestionIndex === 0}
               >
                 <FiChevronLeft /> Previous
@@ -596,7 +638,7 @@ const QuizData = () => {
               ) : (
                 <button
                   className="flex items-center gap-1.5 py-3 px-5 text-[13px] font-medium rounded-lg cursor-pointer transition-all bg-[color:var(--accent)] border-none text-white hover:bg-[color:var(--accent-hover)] max-sm:justify-center"
-                  onClick={() => setCurrentQuestionIndex(prev => Math.min(totalQuestions - 1, prev + 1))}
+                  onClick={() => navigateToQuestion(Math.min(totalQuestions - 1, currentQuestionIndex + 1))}
                 >
                   Next <FiChevronRight />
                 </button>
@@ -613,7 +655,7 @@ const QuizData = () => {
                 multiAnswers={multiAnswers}
                 textAnswers={textAnswers}
                 currentIndex={currentQuestionIndex}
-                onSelect={(i) => setCurrentQuestionIndex(i)}
+                onSelect={(i) => navigateToQuestion(i)}
                 onClose={() => setShowGrid(false)}
               />
             </div>

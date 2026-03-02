@@ -96,10 +96,11 @@ export const quizAPI = {
 
     // Submit quiz - answers format: { questionId: "A"|"B"|"C"|"D" }
     // Extended: multiAnswers for MSQ, textAnswers for DESCRIPTIVE
-    submitQuiz: (id, answers, timeTakenSeconds, multiAnswers = null, textAnswers = null) => {
+    submitQuiz: (id, answers, timeTakenSeconds, multiAnswers = null, textAnswers = null, timePerQuestion = null) => {
         const payload = { answers, timeTakenSeconds };
         if (multiAnswers) payload.multiAnswers = multiAnswers;
         if (textAnswers) payload.textAnswers = textAnswers;
+        if (timePerQuestion) payload.timePerQuestion = timePerQuestion;
         return api.post(`/api/quizzes/${id}/submit`, payload);
     },
 
@@ -167,6 +168,9 @@ export const dashboardAPI = {
 
     getRecentAttempts: (limit = 10) =>
         api.get(`/api/dashboard/recent-attempts?limit=${limit}`),
+
+    getQuizAnalytics: (id) =>
+        api.get(`/api/dashboard/quizzes/${id}/analytics`),
 };
 
 // Admin API

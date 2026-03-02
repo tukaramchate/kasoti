@@ -2,11 +2,13 @@ package com.tukaram.kasoti.security;
 
 import com.tukaram.kasoti.model.Role;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,6 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -30,19 +33,23 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String token = getTokenFromRequest(request);
 
-        if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
-            // Parse token ONCE — extract all claims in a single pass
-            Claims claims = jwtTokenProvider.parseClaims(token);
-            String username = jwtTokenProvider.getUsernameFromClaims(claims);
-            Long userId = jwtTokenProvider.getUserIdFromClaims(claims);
-            Role role = jwtTokenProvider.getRoleFromClaims(claims);
+        if (StringUtils.hasText(token)) {
+            try {
+                // Parse token ONCE — validates signature and expiry; extracts all claims in one pass
+                Claims claims = jwtTokenProvider.parseClaims(token);
+                String username = jwtTokenProvider.getUsernameFromClaims(claims);
+                Long userId = jwtTokenProvider.getUserIdFromClaims(claims);
+                Role role = jwtTokenProvider.getRoleFromClaims(claims);
 
-            UserPrincipal principal = new UserPrincipal(userId, username, role);
+                UserPrincipal principal = new UserPrincipal(userId, username, role);
 
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    principal, null, List.of(new SimpleGrantedAuthority("ROLE_" + role.name())));
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        principal, null, List.of(new SimpleGrantedAuthority("ROLE_" + role.name())));
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            } catch (JwtException | IllegalArgumentException e) {
+                log.warn("Invalid JWT token for request [{}]: {}", request.getRequestURI(), e.getMessage());
+            }
         }
 
         filterChain.doFilter(request, response);

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { quizAPI } from "../../api";
 import { toast } from "react-toastify";
 import PageHeader from "../../components/PageHeader";
 import LoadingSpinner from "../../components/LoadingSpinner";
-import { FiUsers, FiFilter, FiDownload, FiEdit3, FiSend, FiClock, FiCheckCircle } from "react-icons/fi";
+import { FiUsers, FiFilter, FiDownload, FiEdit3, FiSend, FiClock, FiCheckCircle, FiPieChart } from "react-icons/fi";
 
 const SORT_OPTIONS = [
     { value: 'score_desc', label: 'Highest Score' },
@@ -162,6 +162,12 @@ const QuizStudents = () => {
                         <p className="text-[color:var(--text-secondary)] text-sm">
                             {quizInfo?.title} • {students.length} attempts
                         </p>
+                        <Link
+                            to={`/quiz/${id}/analytics`}
+                            className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-[color:var(--accent)] hover:underline"
+                        >
+                            <FiPieChart size={13} /> View Question Analytics
+                        </Link>
                     </div>
 
                     {/* Tabs */}

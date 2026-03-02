@@ -49,14 +49,14 @@ public class AuthService {
         // Determine role - default STUDENT
         // ADMIN and TEACHER cannot be self-registered; must be assigned by admin
         Role role = request.getRole();
+        if (role == null) {
+            role = Role.STUDENT; // null check FIRST to avoid NPE on enum comparisons
+        }
         if (role == Role.ADMIN) {
             throw new BadRequestException("Admin accounts cannot be created through registration");
         }
         if (role == Role.TEACHER) {
             throw new BadRequestException("Teacher accounts require admin approval. Register as a student and contact an administrator.");
-        }
-        if (role == null) {
-            role = Role.STUDENT;
         }
 
         // Create new user with hashed password using builder

@@ -353,6 +353,8 @@ public class QuizService {
         Map<Long, List<String>> multiAnswers = request.getMultiAnswers() != null ? request.getMultiAnswers()
                 : Map.of();
         Map<Long, String> textAnswers = request.getTextAnswers() != null ? request.getTextAnswers() : Map.of();
+        Map<Long, Integer> timePerQuestion = request.getTimePerQuestion() != null ? request.getTimePerQuestion()
+                : Map.of();
 
         List<Answer> answers = new ArrayList<>();
         int correctCount = 0;
@@ -396,6 +398,8 @@ public class QuizService {
                 }
                 default -> throw new BadRequestException("Unsupported question type: " + type);
             }
+            // Record per-question time for analytics
+            answer.setTimeSpentSeconds(timePerQuestion.get(question.getId()));
             answers.add(answer);
         }
 

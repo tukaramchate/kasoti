@@ -58,7 +58,10 @@ public class AuthController {
             @Valid @RequestBody PasswordResetRequest request) {
         String token = authService.forgotPassword(request.getEmail());
         // SECURITY: Never expose token to client. In production, send via email.
-        log.info("Password reset token generated for email: {}. Token (dev only): {}", request.getEmail(), token);
+        // Guard: only log when email exists — logging null would leak whether email is registered
+        if (token != null) {
+            log.info("Password reset token generated for email: {}. Token (dev only): {}", request.getEmail(), token);
+        }
         return ResponseEntity.ok(Map.of(
                 "message", "If the email exists, a password reset link has been sent."));
     }

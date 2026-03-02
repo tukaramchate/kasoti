@@ -6,50 +6,50 @@
 
 /* ===== CSS Variables (kept for dark mode theming) ===== */
 :root {
-  --bg-primary: #f8f9fb;
+  --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
-  --bg-hover: #f1f3f5;
-  --bg-input: #f8f9fb;
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
-  --text-muted: #9ca3af;
-  --border: #e5e7eb;
-  --border-light: #f3f4f6;
+  --bg-hover: #f1f5f9;
+  --bg-input: #f8fafc;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --border: #e2e8f0;
+  --border-light: #f1f5f9;
 
   --accent: #6366f1;
   --accent-hover: #4f46e5;
-  --accent-light: #eef2ff;
+  --accent-light: #e0e7ff;
   --accent-subtle: #c7d2fe;
 
   --success: #10b981;
-  --success-light: #ecfdf5;
+  --success-light: #d1fae5;
   --warning: #f59e0b;
-  --warning-light: #fffbeb;
+  --warning-light: #fef3c7;
   --danger: #ef4444;
-  --danger-light: #fef2f2;
+  --danger-light: #fee2e2;
 }
 
 [data-theme="dark"] {
-  --bg-primary: #0f1117;
-  --bg-secondary: #1a1d27;
-  --bg-card: #1e2130;
-  --bg-hover: #252838;
-  --bg-input: #1a1d27;
-  --text-primary: #f1f3f5;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
-  --border: #2d3142;
-  --border-light: #252838;
+  --bg-primary: #020617;
+  --bg-secondary: #0f172a;
+  --bg-card: #1e293b;
+  --bg-hover: #334155;
+  --bg-input: #0f172a;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
+  --border: #334155;
+  --border-light: #1e293b;
 
   --accent: #818cf8;
   --accent-hover: #6366f1;
-  --accent-light: #1e1b4b;
-  --accent-subtle: #3730a3;
+  --accent-light: rgba(99, 102, 241, 0.15);
+  --accent-subtle: #4f46e5;
 
-  --success-light: #064e3b;
-  --warning-light: #451a03;
-  --danger-light: #450a0a;
+  --success-light: rgba(16, 185, 129, 0.15);
+  --warning-light: rgba(245, 158, 11, 0.15);
+  --danger-light: rgba(239, 68, 68, 0.15);
 }
 
 /* ===== Base Layer ===== */

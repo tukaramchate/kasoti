@@ -39,7 +39,14 @@ public class Quiz {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
-    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler", "password" })
+    @JsonIgnoreProperties({
+            "hibernateLazyInitializer", "handler",
+            "password", // already ignored — belt-and-suspenders
+            "email", // PII — not needed in exported quiz JSON
+            "phone", // PII — not needed in exported quiz JSON
+            "createdAt", // internal timestamp — not needed
+            "updatedAt" // internal timestamp — not needed
+    })
     @ToString.Exclude
     private User createdBy;
 

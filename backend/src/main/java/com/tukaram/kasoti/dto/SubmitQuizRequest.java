@@ -45,4 +45,10 @@ public class SubmitQuizRequest {
     private Map<Long, String> textAnswers;
 
     private Integer timeTakenSeconds;
+
+    /**
+     * Time spent per question: questionId → seconds.
+     * Used for question-level analytics.
+     */
+    private Map<Long, Integer> timePerQuestion;
 }

@@ -26,6 +26,7 @@ const Leaderboard = lazy(() => import("./pages/Leaderboard/Leaderboard"));
 const ShareQuiz = lazy(() => import("./pages/ShareQuiz/ShareQuiz"));
 const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard"));
 const Admin = lazy(() => import("./pages/Admin/Admin"));
+const Analytics = lazy(() => import("./pages/Analytics/Analytics"));
 const NotFound = lazy(() => import("./pages/NotFound/NotFound"));
 
 const SuspenseFallback = () => (
@@ -83,6 +84,9 @@ const AppRoutes = () => {
           } />
           <Route path="/dashboard" element={
             <ProtectedRoute><RoleGuard roles={["TEACHER", "ADMIN"]}><AppLayout><Dashboard /></AppLayout></RoleGuard></ProtectedRoute>
+          } />
+          <Route path="/quiz/:id/analytics" element={
+            <ProtectedRoute><RoleGuard roles={["TEACHER", "ADMIN"]}><AppLayout><Analytics /></AppLayout></RoleGuard></ProtectedRoute>
           } />
 
           {/* Admin-only routes with Navbar */}

@@ -29,6 +29,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(BaseAppException.class)
     public ResponseEntity<ErrorResponse> handleAppException(BaseAppException ex) {
+        log.warn("Application exception [{}] {}: {}", ex.getStatus().value(), ex.getErrorCode(), ex.getMessage());
         ErrorResponse error = ErrorResponse.builder()
                 .status(ex.getStatus().value())
                 .error(ex.getErrorCode())

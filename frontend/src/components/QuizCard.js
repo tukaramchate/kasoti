@@ -110,7 +110,7 @@ const QuizCard = ({ quiz, onClick, onDelete, onPublish, onClose }) => {
     return (
         <>
             <div
-                className="bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-xl p-5 cursor-pointer transition-all duration-200 hover:border-[color:var(--accent-subtle)] hover:shadow-md hover:-translate-y-0.5 flex flex-col h-full"
+                className="bg-[color:var(--bg-card)]/80 backdrop-blur-lg border border-[color:var(--border)] rounded-2xl p-5 cursor-pointer transition-all duration-300 hover:border-[color:var(--accent-subtle)] hover:shadow-glow hover:-translate-y-1 flex flex-col h-full relative"
                 onClick={onClick}
             >
                 {/* Badges row */}
@@ -134,7 +134,7 @@ const QuizCard = ({ quiz, onClick, onDelete, onPublish, onClose }) => {
                 </div>
 
                 {/* Title */}
-                <h3 className="text-[15px] font-semibold text-[color:var(--text-primary)] m-0 mb-2 leading-snug line-clamp-2">{quiz.title}</h3>
+                <h3 className="text-[17px] font-bold text-[color:var(--text-primary)] m-0 mb-3 leading-snug line-clamp-2 tracking-tight">{quiz.title}</h3>
 
                 {/* Meta row */}
                 <div className="flex gap-4 text-[color:var(--text-muted)] text-xs mb-3">
@@ -150,13 +150,13 @@ const QuizCard = ({ quiz, onClick, onDelete, onPublish, onClose }) => {
 
                 {/* Tags */}
                 {tagList.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-3">
+                    <div className="flex flex-wrap gap-1 mb-4">
                         {tagList.slice(0, 3).map((tag) => (
-                            <span key={tag} className="flex items-center gap-0.5 bg-[color:var(--bg-hover)] text-[color:var(--text-muted)] px-2 py-0.5 rounded-full text-[10px]">
-                                <FiTag size={8} /> {tag}
+                            <span key={tag} className="flex items-center gap-1bg-[color:var(--bg-hover)]/50 backdrop-blur-sm text-[color:var(--text-secondary)] px-2.5 py-1 rounded-full text-[11px] font-medium border border-[color:var(--border)]">
+                                <FiTag size={10} /> {tag}
                             </span>
                         ))}
-                        {tagList.length > 3 && <span className="text-[color:var(--text-muted)] text-[10px] py-0.5 px-1">+{tagList.length - 3}</span>}
+                        {tagList.length > 3 && <span className="text-[color:var(--text-muted)] text-[11px] py-1 px-1.5 font-medium">+{tagList.length - 3}</span>}
                     </div>
                 )}
 

@@ -134,4 +134,13 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, Long> 
             "ORDER BY qa.attemptedAt DESC")
     Page<QuizAttempt> findByQuizCreatedByIdWithUserAndQuiz(
             @Param("teacherId") Long teacherId, Pageable pageable);
+
+    // ========== Analytics Queries ==========
+
+    /**
+     * Get all scores for a quiz (used for median / std-dev / histogram).
+     * Note: score is Integer in QuizAttempt, return as Integer and convert in service.
+     */
+    @Query("SELECT qa.score FROM QuizAttempt qa WHERE qa.quiz.id = :quizId ORDER BY qa.score ASC")
+    List<Integer> findAllScoresByQuizId(@Param("quizId") Long quizId);
 }
