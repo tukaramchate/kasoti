@@ -12,7 +12,7 @@
 	<artifactId>kasoti</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>kasoti</name>
-	<description>Quiz backend logic using Spring Boot</description>
+	<description>Kasoti backend logic using Spring Boot</description>
 	<properties>
 		<java.version>21</java.version>
 	</properties>

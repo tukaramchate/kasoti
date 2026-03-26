@@ -63,7 +63,7 @@ const AppRoutes = () => {
             <ProtectedRoute><AppLayout><Home /></AppLayout></ProtectedRoute>
           } />
           <Route path="/quiz/:id" element={
-            <ProtectedRoute><AppLayout><QuizData /></AppLayout></ProtectedRoute>
+            <ProtectedRoute><QuizData /></ProtectedRoute>
           } />
           <Route path="/profile" element={
             <ProtectedRoute><AppLayout><Profile /></AppLayout></ProtectedRoute>

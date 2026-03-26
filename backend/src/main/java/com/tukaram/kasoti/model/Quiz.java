@@ -112,6 +112,16 @@ public class Quiz {
     private Boolean shuffleOptions = false;
 
     /**
+     * Require students to take the quiz in browser full-screen mode.
+     * When enabled, students must enter full-screen before answering.
+     * Exiting full-screen triggers a warning; repeated violations auto-submit.
+     * Default: false.
+     */
+    @Column(name = "full_screen_required")
+    @Builder.Default
+    private Boolean fullScreenRequired = false;
+
+    /**
      * Minimum percentage required to pass the quiz.
      * Null means no pass/fail threshold.
      */

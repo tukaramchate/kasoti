@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { quizAPI } from "../../api";
 import { useAuth } from "../../context/UserContext";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { FiSearch, FiChevronLeft, FiChevronRight, FiFilter } from "react-icons/fi";
+import { FiSearch, FiChevronLeft, FiChevronRight, FiFilter, FiX, FiChevronDown, FiChevronUp } from "react-icons/fi";
 
 // Components
 import QuizCard from "../../components/QuizCard";
@@ -34,6 +34,9 @@ const Home = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery);
   const [categories, setCategories] = useState(['All']);
+  const [showFilters, setShowFilters] = useState(true);
+  const [showAllTags, setShowAllTags] = useState(false);
+  const MAX_VISIBLE_TAGS = 20;
 
   // Pagination state
   const [page, setPage] = useState(0);
@@ -135,6 +138,10 @@ const Home = () => {
   // Calculate total questions from current page
   const totalQuestions = quizzes.reduce((acc, quiz) => acc + (quiz.questionCount || quiz.questions?.length || 0), 0);
 
+  // Filter helpers
+  const activeFilterCount = (selectedCategory !== 'All' ? 1 : 0) + (selectedDifficulty !== 'All' ? 1 : 0) + (selectedTag ? 1 : 0);
+  const visibleTags = useMemo(() => showAllTags ? availableTags : availableTags.slice(0, MAX_VISIBLE_TAGS), [showAllTags, availableTags, MAX_VISIBLE_TAGS]);
+
   return (
     <div className="min-h-screen bg-[color:var(--bg-primary)]">
       {/* Hero Section */}
@@ -220,74 +227,163 @@ const Home = () => {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col gap-2.5 mb-6 bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-xl p-4">
-          {/* Category Filter */}
-          <div className="flex flex-wrap gap-1.5">
-            {categories.map((category) => (
+        <div className="mb-6">
+          {/* Filter Toggle Bar */}
+          <div className="flex items-center justify-between mb-3">
+            <button
+              onClick={() => setShowFilters(f => !f)}
+              className="flex items-center gap-2 text-[13px] font-medium text-[color:var(--text-secondary)] hover:text-[color:var(--accent)] transition-colors duration-150 cursor-pointer bg-transparent border-none p-0"
+            >
+              <FiFilter className="text-sm" />
+              <span>Filters</span>
+              {activeFilterCount > 0 && (
+                <span className="inline-flex items-center justify-center h-[18px] min-w-[18px] px-1 rounded-full bg-[color:var(--accent)] text-white text-[10px] font-bold leading-none">
+                  {activeFilterCount}
+                </span>
+              )}
+              {showFilters ? <FiChevronUp className="text-xs" /> : <FiChevronDown className="text-xs" />}
+            </button>
+
+            {activeFilterCount > 0 && (
               <button
-                key={category}
-                className={`py-1.5 px-3.5 border rounded-full font-sans text-xs font-medium cursor-pointer transition-all duration-150 ${selectedCategory === category
-                  ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
-                  : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]'
-                  }`}
-                onClick={() => setSelectedCategory(category)}
+                onClick={() => { setSelectedCategory('All'); setSelectedDifficulty('All'); setSelectedTag(''); }}
+                className="flex items-center gap-1 text-[11px] text-[color:var(--text-muted)] hover:text-red-400 transition-colors duration-150 cursor-pointer bg-transparent border-none p-0"
               >
-                {category}
+                <FiX className="text-xs" />
+                Clear all
               </button>
-            ))}
+            )}
           </div>
 
-          {/* Difficulty + Tags */}
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            <div className="flex items-center gap-1.5">
-              <FiFilter className="text-[color:var(--text-muted)] text-xs" />
-              <span className="text-[11px] text-[color:var(--text-muted)] font-medium">Difficulty:</span>
-              <div className="flex gap-1">
-                {['All', 'EASY', 'MEDIUM', 'HARD'].map((d) => (
-                  <button
-                    key={d}
-                    className={`py-1 px-2.5 border rounded-full font-sans text-[11px] font-medium cursor-pointer transition-all duration-150 ${selectedDifficulty === d
-                      ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
-                      : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]'
-                      }`}
-                    onClick={() => setSelectedDifficulty(d)}
-                  >
-                    {d === 'All' ? 'All' : d.charAt(0) + d.slice(1).toLowerCase()}
-                  </button>
-                ))}
-              </div>
+          {/* Active Filter Pills (always visible when filters are applied) */}
+          {!showFilters && activeFilterCount > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {selectedCategory !== 'All' && (
+                <span className="inline-flex items-center gap-1 py-1 px-2.5 rounded-full bg-[color:var(--accent)]/15 text-[color:var(--accent)] text-[11px] font-medium">
+                  {selectedCategory}
+                  <FiX className="text-[10px] cursor-pointer hover:text-white" onClick={() => setSelectedCategory('All')} />
+                </span>
+              )}
+              {selectedDifficulty !== 'All' && (
+                <span className="inline-flex items-center gap-1 py-1 px-2.5 rounded-full bg-[color:var(--accent)]/15 text-[color:var(--accent)] text-[11px] font-medium">
+                  {selectedDifficulty.charAt(0) + selectedDifficulty.slice(1).toLowerCase()}
+                  <FiX className="text-[10px] cursor-pointer hover:text-white" onClick={() => setSelectedDifficulty('All')} />
+                </span>
+              )}
+              {selectedTag && (
+                <span className="inline-flex items-center gap-1 py-1 px-2.5 rounded-full bg-[color:var(--accent)]/15 text-[color:var(--accent)] text-[11px] font-medium">
+                  #{selectedTag}
+                  <FiX className="text-[10px] cursor-pointer hover:text-white" onClick={() => setSelectedTag('')} />
+                </span>
+              )}
             </div>
+          )}
 
-            {availableTags.length > 0 && (
-              <div className="flex items-center gap-1.5">
-                <FiFilter className="text-[color:var(--text-muted)] text-xs" />
-                <span className="text-[11px] text-[color:var(--text-muted)] font-medium">Tags:</span>
-                <div className="flex flex-wrap gap-1">
-                  <button
-                    className={`py-1 px-2.5 border rounded-full font-sans text-[11px] font-medium cursor-pointer transition-all duration-150 ${!selectedTag
-                      ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
-                      : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]'
-                      }`}
-                    onClick={() => setSelectedTag('')}
-                  >
-                    All
-                  </button>
-                  {availableTags.map((tag) => (
+          {/* Expandable Filter Panel */}
+          {showFilters && (
+            <div className="bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-xl overflow-hidden">
+              {/* Category Section */}
+              <div className="p-4 pb-3">
+                <span className="text-[11px] uppercase tracking-wider text-[color:var(--text-muted)] font-semibold mb-2.5 block">Category</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {categories.map((category) => (
                     <button
-                      key={tag}
-                      className={`py-1 px-2.5 border rounded-full font-sans text-[11px] font-medium cursor-pointer transition-all duration-150 ${selectedTag === tag
-                        ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
-                        : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]'
+                      key={category}
+                      className={`py-1.5 px-3 border rounded-full font-sans text-[11px] font-medium cursor-pointer transition-all duration-150 ${selectedCategory === category
+                        ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)] shadow-[0_0_8px_var(--accent-light)]'
+                        : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] hover:bg-[color:var(--accent)]/5'
                         }`}
-                      onClick={() => setSelectedTag(tag)}
+                      onClick={() => setSelectedCategory(category)}
                     >
-                      {tag}
+                      {category}
                     </button>
                   ))}
                 </div>
               </div>
-            )}
-          </div>
+
+              <div className="h-px bg-[color:var(--border)] mx-4" />
+
+              {/* Difficulty Section */}
+              <div className="p-4 pb-3">
+                <span className="text-[11px] uppercase tracking-wider text-[color:var(--text-muted)] font-semibold mb-2.5 block">Difficulty</span>
+                <div className="flex gap-1.5">
+                  {['All', 'EASY', 'MEDIUM', 'HARD'].map((d) => {
+                    const difficultyColors = {
+                      'EASY': selectedDifficulty === d ? 'bg-emerald-500 border-emerald-500 text-white shadow-[0_0_8px_rgba(16,185,129,0.3)]' : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10',
+                      'MEDIUM': selectedDifficulty === d ? 'bg-amber-500 border-amber-500 text-white shadow-[0_0_8px_rgba(245,158,11,0.3)]' : 'border-amber-500/30 text-amber-400 hover:bg-amber-500/10',
+                      'HARD': selectedDifficulty === d ? 'bg-red-500 border-red-500 text-white shadow-[0_0_8px_rgba(239,68,68,0.3)]' : 'border-red-500/30 text-red-400 hover:bg-red-500/10',
+                    };
+                    const isAll = d === 'All';
+                    const colorClass = isAll
+                      ? (selectedDifficulty === d ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]' : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]')
+                      : difficultyColors[d];
+                    return (
+                      <button
+                        key={d}
+                        className={`py-1.5 px-3.5 border rounded-full font-sans text-[11px] font-semibold cursor-pointer transition-all duration-150 ${colorClass}`}
+                        onClick={() => setSelectedDifficulty(d)}
+                      >
+                        {isAll ? 'All' : d.charAt(0) + d.slice(1).toLowerCase()}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Tags Section */}
+              {availableTags.length > 0 && (
+                <>
+                  <div className="h-px bg-[color:var(--border)] mx-4" />
+                  <div className="p-4 pb-3">
+                    <div className="flex items-center justify-between mb-2.5">
+                      <span className="text-[11px] uppercase tracking-wider text-[color:var(--text-muted)] font-semibold">
+                        Tags
+                        <span className="ml-1.5 text-[10px] normal-case tracking-normal font-normal opacity-60">
+                          ({availableTags.length})
+                        </span>
+                      </span>
+                      {availableTags.length > MAX_VISIBLE_TAGS && (
+                        <button
+                          onClick={() => setShowAllTags(v => !v)}
+                          className="text-[11px] text-[color:var(--accent)] hover:underline cursor-pointer bg-transparent border-none p-0 font-medium"
+                        >
+                          {showAllTags ? 'Show less' : `Show all ${availableTags.length}`}
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        className={`py-1 px-2.5 border rounded-full font-sans text-[11px] font-medium cursor-pointer transition-all duration-150 ${!selectedTag
+                          ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)]'
+                          : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] hover:bg-[color:var(--accent)]/5'
+                          }`}
+                        onClick={() => setSelectedTag('')}
+                      >
+                        All
+                      </button>
+                      {visibleTags.map((tag) => (
+                        <button
+                          key={tag}
+                          className={`py-1 px-2.5 border rounded-full font-sans text-[11px] font-medium cursor-pointer transition-all duration-150 ${selectedTag === tag
+                            ? 'bg-[color:var(--accent)] text-white border-[color:var(--accent)] shadow-[0_0_8px_var(--accent-light)]'
+                            : 'bg-transparent border-[color:var(--border)] text-[color:var(--text-secondary)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] hover:bg-[color:var(--accent)]/5'
+                            }`}
+                          onClick={() => setSelectedTag(tag)}
+                        >
+                          #{tag}
+                        </button>
+                      ))}
+                      {!showAllTags && availableTags.length > MAX_VISIBLE_TAGS && (
+                        <span className="py-1 px-2 text-[11px] text-[color:var(--text-muted)]">
+                          +{availableTags.length - MAX_VISIBLE_TAGS} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {loading ? (

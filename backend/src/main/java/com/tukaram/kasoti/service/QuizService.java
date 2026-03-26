@@ -106,6 +106,7 @@ public class QuizService {
                 .negativeMarking(quiz.getNegativeMarking())
                 .shuffleQuestions(quiz.getShuffleQuestions())
                 .shuffleOptions(quiz.getShuffleOptions())
+                .fullScreenRequired(quiz.getFullScreenRequired())
                 .startTime(quiz.getStartTime())
                 .endTime(quiz.getEndTime())
                 .totalMarks(quiz.getTotalMarks())
@@ -254,6 +255,7 @@ public class QuizService {
         quiz.setNegativeMarking(quizDetails.getNegativeMarking());
         quiz.setShuffleQuestions(quizDetails.getShuffleQuestions());
         quiz.setShuffleOptions(quizDetails.getShuffleOptions());
+        quiz.setFullScreenRequired(quizDetails.getFullScreenRequired());
         quiz.setPassPercentage(quizDetails.getPassPercentage());
         quiz.setDifficulty(quizDetails.getDifficulty());
         quiz.setTags(quizDetails.getTags());
@@ -760,6 +762,7 @@ public class QuizService {
                 .negativeMarking(request.getNegativeMarking() != null ? request.getNegativeMarking() : false)
                 .shuffleQuestions(request.getShuffleQuestions() != null ? request.getShuffleQuestions() : false)
                 .shuffleOptions(request.getShuffleOptions() != null ? request.getShuffleOptions() : false)
+                .fullScreenRequired(request.getFullScreenRequired() != null ? request.getFullScreenRequired() : false)
                 .passPercentage(request.getPassPercentage())
                 .difficulty(request.getDifficulty())
                 .tags(request.getTags())

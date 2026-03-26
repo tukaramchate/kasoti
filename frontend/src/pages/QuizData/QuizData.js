@@ -2,9 +2,10 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { quizAPI } from "../../api";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
-import { FiChevronLeft, FiCheck, FiHome, FiClock, FiChevronRight, FiAward, FiAlertTriangle, FiShuffle, FiGrid, FiX, FiCheckCircle, FiXCircle } from "react-icons/fi";
+import { FiChevronLeft, FiCheck, FiHome, FiClock, FiChevronRight, FiAward, FiAlertTriangle, FiShuffle, FiGrid, FiX, FiCheckCircle, FiXCircle, FiMaximize } from "react-icons/fi";
 import PageHeader from "../../components/PageHeader";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import FullScreenGuard from "../../components/FullScreenGuard";
 
 /* ─── Question Grid (side panel / mobile drawer) ─── */
 const QuestionGrid = ({ questions, selectedAnswers, multiAnswers, textAnswers, currentIndex, onSelect, onClose }) => (
@@ -306,6 +307,17 @@ const QuizData = () => {
     return () => clearInterval(timer);
   }, [isTimerRunning, timeLeft, quizDetails, handleSubmitQuiz]);
 
+  // Warn before tab close / refresh during active quiz
+  useEffect(() => {
+    if (!isTimerRunning || showResults) return;
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isTimerRunning, showResults]);
+
   const handleOptionClick = (questionId, selectedOption) => {
     if (showResults) return;
     setSelectedAnswers(prev => ({ ...prev, [questionId]: selectedOption }));
@@ -459,6 +471,10 @@ const QuizData = () => {
   }
 
   return (
+    <FullScreenGuard
+      enabled={!!(quizDetails?.fullScreenRequired && !showResults && !alreadyAttempted)}
+      onAutoSubmit={() => handleSubmitQuiz(true)}
+    >
     <div className="min-h-screen bg-[color:var(--bg-primary)] p-6 max-w-[900px] mx-auto max-sm:p-4">
       {/* Header with Title + Timer */}
       <div className="flex justify-between items-center mb-5 max-sm:flex-col max-sm:gap-3 max-sm:items-stretch">
@@ -495,6 +511,11 @@ const QuizData = () => {
           {quizDetails.passPercentage > 0 && (
             <div className="flex items-center gap-[5px] py-1.5 px-3 bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-lg text-xs text-[color:var(--text-secondary)]">
               Pass: {quizDetails.passPercentage}%
+            </div>
+          )}
+          {quizDetails.fullScreenRequired && (
+            <div className="flex items-center gap-[5px] py-1.5 px-3 bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-lg text-xs text-[color:var(--text-secondary)]">
+              <FiMaximize className="text-[color:var(--accent)]" /> Full Screen
             </div>
           )}
           <div className="flex items-center gap-[5px] py-1.5 px-3 bg-[color:var(--bg-card)] border border-[color:var(--border)] rounded-lg text-xs text-[color:var(--text-secondary)]">
@@ -717,6 +738,7 @@ const QuizData = () => {
         onCancel={() => setConfirmSubmit(false)}
       />
     </div>
+    </FullScreenGuard>
   );
 };
 

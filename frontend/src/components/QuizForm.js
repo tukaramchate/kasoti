@@ -262,6 +262,7 @@ const QuizForm = ({
   const [negativeMarking, setNegativeMarking] = useState(initialData.negativeMarking || false);
   const [shuffleQuestions, setShuffleQuestions] = useState(initialData.shuffleQuestions || false);
   const [shuffleOptions, setShuffleOptions] = useState(initialData.shuffleOptions || false);
+  const [fullScreenRequired, setFullScreenRequired] = useState(initialData.fullScreenRequired || false);
   const [passPercentage, setPassPercentage] = useState(initialData.passPercentage || "");
   const [startTime, setStartTime] = useState(initialData.startTime || "");
   const [endTime, setEndTime] = useState(initialData.endTime || "");
@@ -314,6 +315,7 @@ const QuizForm = ({
         negativeMarking,
         shuffleQuestions,
         shuffleOptions,
+        fullScreenRequired,
         passPercentage: passPercentage ? parseInt(passPercentage) : null,
         startTime: startTime || null,
         endTime: endTime || null,
@@ -503,6 +505,7 @@ const QuizForm = ({
           <ToggleSwitch label="Shuffle Questions" description="Randomize order" checked={shuffleQuestions} onChange={() => setShuffleQuestions(!shuffleQuestions)} />
           <ToggleSwitch label="Shuffle Options" description="Randomize answers" checked={shuffleOptions} onChange={() => setShuffleOptions(!shuffleOptions)} />
           <ToggleSwitch label="Negative Marking" description="Penalty for wrong" checked={negativeMarking} onChange={() => setNegativeMarking(!negativeMarking)} />
+          <ToggleSwitch label="Full Screen Mode" description="Require full screen" checked={fullScreenRequired} onChange={() => setFullScreenRequired(!fullScreenRequired)} />
         </div>
       </div>
 

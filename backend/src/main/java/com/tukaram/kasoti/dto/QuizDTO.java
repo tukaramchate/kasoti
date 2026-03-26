@@ -29,6 +29,7 @@ public class QuizDTO {
     private Boolean negativeMarking;
     private Boolean shuffleQuestions;
     private Boolean shuffleOptions;
+    private Boolean fullScreenRequired;
     private java.time.LocalDateTime startTime;
     private java.time.LocalDateTime endTime;
     private Integer totalMarks;

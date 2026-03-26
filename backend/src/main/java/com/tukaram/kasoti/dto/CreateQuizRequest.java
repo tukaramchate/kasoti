@@ -40,6 +40,7 @@ public class CreateQuizRequest {
     private Boolean negativeMarking;
     private Boolean shuffleQuestions;
     private Boolean shuffleOptions;
+    private Boolean fullScreenRequired;
     private Integer passPercentage;
 
     @Size(max = 10, message = "Difficulty must be at most 10 characters")
