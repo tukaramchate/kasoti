@@ -228,7 +228,28 @@ const Profile = () => {
                                     <h4 className="text-sm font-semibold text-[color:var(--text-primary)] mb-0.5">{item.title || item.quizTitle || item.quiz?.title || "Untitled Quiz"}</h4>
                                     <span className="text-xs text-[color:var(--text-muted)]">
                                         {isTeacher
-                                            ? `${item.questionCount || item.questions?.length || 0} Questions • ${item.status || "DRAFT"}`
+                                            ? (
+                                                <div className="flex items-center gap-1.5 mt-1" onClick={(e) => e.stopPropagation()}>
+                                                    <span>{item.questionCount || item.questions?.length || 0} Questions •</span>
+                                                    <select 
+                                                        className="bg-transparent border border-[color:var(--border)] rounded text-xs px-1 py-0.5 outline-none cursor-pointer hover:border-[color:var(--accent)]"
+                                                        value={item.status || "DRAFT"}
+                                                        onChange={async (e) => {
+                                                            try {
+                                                                await quizAPI.updateStatus(item.id, e.target.value);
+                                                                toast.success("Quiz status updated");
+                                                                fetchProfileData();
+                                                            } catch (err) {
+                                                                toast.error(err.response?.data?.message || "Failed to update status");
+                                                            }
+                                                        }}
+                                                    >
+                                                        <option value="DRAFT">DRAFT</option>
+                                                        <option value="PUBLISHED">PUBLISHED</option>
+                                                        <option value="CLOSED">CLOSED</option>
+                                                    </select>
+                                                </div>
+                                            )
                                             : `Completed ${item.attemptedAt ? new Date(item.attemptedAt).toLocaleDateString() : ""}`}
                                     </span>
                                 </div>

@@ -266,6 +266,7 @@ const QuizForm = ({
   const [passPercentage, setPassPercentage] = useState(initialData.passPercentage || "");
   const [startTime, setStartTime] = useState(initialData.startTime || "");
   const [endTime, setEndTime] = useState(initialData.endTime || "");
+  const [formStatus, setFormStatus] = useState(initialData.status || "PUBLISHED");
   const [questions, setQuestions] = useState(
     initialData.questions?.length
       ? initialData.questions
@@ -274,7 +275,7 @@ const QuizForm = ({
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  const status = initialData.status;
+  const status = formStatus;
 
   const validate = () => {
     const newErrors = {};
@@ -311,6 +312,7 @@ const QuizForm = ({
         category,
         difficulty: difficulty || null,
         tags: tags.trim() || null,
+        status: formStatus,
         timeLimitMinutes: timeLimitMinutes ? parseInt(timeLimitMinutes) : null,
         negativeMarking,
         shuffleQuestions,
@@ -453,13 +455,23 @@ const QuizForm = ({
           />
         </div>
 
-        <div>
-          <label className={labelClass}>Category</label>
-          <select className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)}>
-            {CATEGORIES.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3.5 max-sm:grid-cols-1">
+          <div>
+            <label className={labelClass}>Category</label>
+            <select className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)}>
+              {CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelClass}>Status</label>
+            <select className={inputClass} value={formStatus} onChange={(e) => setFormStatus(e.target.value)}>
+              <option value="DRAFT">Draft</option>
+              <option value="PUBLISHED">Published</option>
+              <option value="CLOSED">Closed</option>
+            </select>
+          </div>
         </div>
 
         <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3.5 mt-3.5 max-sm:grid-cols-1">

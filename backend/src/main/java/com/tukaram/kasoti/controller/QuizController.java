@@ -191,6 +191,15 @@ public class QuizController {
         return ResponseEntity.ok(quizService.closeQuiz(id, principal));
     }
 
+    @Operation(summary = "Update quiz status", description = "Update the status of a quiz")
+    @PutMapping("/{id}/status")
+    public ResponseEntity<Quiz> updateQuizStatus(
+            @PathVariable Long id,
+            @RequestParam com.tukaram.kasoti.model.QuizStatus status,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(quizService.updateQuizStatus(id, status, principal));
+    }
+
     @Operation(summary = "Get quiz students", description = "List all students who attempted a quiz with their scores. Teacher/Admin only.")
     @ApiResponse(responseCode = "200", description = "List of student results")
     @GetMapping("/{id}/students")

@@ -159,9 +159,29 @@ const QuizStudents = () => {
                         <h1 className="flex items-center justify-center gap-2.5 text-2xl font-bold text-[color:var(--text-primary)] mb-1.5 max-sm:text-xl">
                             <FiUsers /> Student Attempts
                         </h1>
-                        <p className="text-[color:var(--text-secondary)] text-sm">
-                            {quizInfo?.title} • {students.length} attempts
-                        </p>
+                        <div className="text-[color:var(--text-secondary)] text-sm flex items-center justify-center gap-2 mt-1">
+                            <span>{quizInfo?.title}</span>
+                            <span>•</span>
+                            <span>{students.length} attempts</span>
+                            <span>•</span>
+                            <select
+                                className="bg-[color:var(--bg-input)] border border-[color:var(--border)] rounded text-xs px-1.5 py-0.5 outline-none cursor-pointer hover:border-[color:var(--accent)]"
+                                value={quizInfo?.status || "DRAFT"}
+                                onChange={async (e) => {
+                                    try {
+                                        await quizAPI.updateStatus(id, e.target.value);
+                                        toast.success("Quiz status updated");
+                                        fetchData();
+                                    } catch (err) {
+                                        toast.error(err.response?.data?.message || "Failed to update status");
+                                    }
+                                }}
+                            >
+                                <option value="DRAFT">DRAFT</option>
+                                <option value="PUBLISHED">PUBLISHED</option>
+                                <option value="CLOSED">CLOSED</option>
+                            </select>
+                        </div>
                         <Link
                             to={`/quiz/${id}/analytics`}
                             className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-[color:var(--accent)] hover:underline"

@@ -39,6 +39,12 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    /** RestTemplate used by ProctoringService to call the Python AI microservice. */
+    @Bean
+    public org.springframework.web.client.RestTemplate restTemplate() {
+        return new org.springframework.web.client.RestTemplate();
+    }
+
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
@@ -97,6 +103,18 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/quizzes").hasAnyRole("ADMIN", "TEACHER")
                         .requestMatchers(HttpMethod.PUT, "/api/quizzes/**").hasAnyRole("ADMIN", "TEACHER")
                         .requestMatchers(HttpMethod.DELETE, "/api/quizzes/**").hasAnyRole("ADMIN", "TEACHER")
+
+                        // Proctoring endpoints — student actions require authentication
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/proctoring/start",
+                                "/api/proctoring/analyze",
+                                "/api/proctoring/end")
+                        .authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/proctoring/session/**")
+                        .authenticated()
+                        // Violation logs — teachers and admins only
+                        .requestMatchers(HttpMethod.GET, "/api/proctoring/violations/**")
+                        .hasAnyRole("ADMIN", "TEACHER")
 
                         // Protected endpoints - any authenticated user
                         .requestMatchers(

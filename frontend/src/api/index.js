@@ -94,6 +94,9 @@ export const quizAPI = {
     closeQuiz: (id) =>
         api.post(`/api/quizzes/${id}/close`),
 
+    updateStatus: (id, status) =>
+        api.put(`/api/quizzes/${id}/status?status=${status}`),
+
     // Submit quiz - answers format: { questionId: "A"|"B"|"C"|"D" }
     // Extended: multiAnswers for MSQ, textAnswers for DESCRIPTIVE
     submitQuiz: (id, answers, timeTakenSeconds, multiAnswers = null, textAnswers = null, timePerQuestion = null) => {
@@ -208,6 +211,32 @@ export const adminAPI = {
 
     getAttemptById: (id) =>
         api.get(`/api/admin/attempts/${id}`),
+};
+
+// Proctoring API
+export const proctorAPI = {
+    /** Start a proctoring session with a reference face image. */
+    startSession: (quizId, referenceImageBase64) =>
+        api.post('/api/proctoring/start', { quizId, referenceImageBase64 }),
+
+    /** Send a webcam frame (base64) or a client-side violation type for logging. */
+    analyzeFrame: (quizId, imageBase64, clientViolationType = null) => {
+        const payload = { quizId, imageBase64 };
+        if (clientViolationType) payload.clientViolationType = clientViolationType;
+        return api.post('/api/proctoring/analyze', payload);
+    },
+
+    /** End the proctoring session (called on quiz submit). */
+    endSession: (quizId) =>
+        api.post(`/api/proctoring/end?quizId=${quizId}`),
+
+    /** Get current session status. */
+    getSessionStatus: (quizId) =>
+        api.get(`/api/proctoring/session/${quizId}`),
+
+    /** Get violation log for a session (Teacher/Admin). */
+    getViolations: (sessionId) =>
+        api.get(`/api/proctoring/violations/${sessionId}`),
 };
 
 export default api;

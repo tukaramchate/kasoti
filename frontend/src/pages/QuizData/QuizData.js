@@ -6,6 +6,10 @@ import { FiChevronLeft, FiCheck, FiHome, FiClock, FiChevronRight, FiAward, FiAle
 import PageHeader from "../../components/PageHeader";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FullScreenGuard from "../../components/FullScreenGuard";
+// ── Proctoring ────────────────────────────────────────────────────────────────
+import useProctoring from "../../hooks/useProctoring";
+import ProctoringOverlay from "../../components/ProctoringOverlay";
+import WebcamPreview from "../../components/WebcamPreview";
 
 /* ─── Question Grid (side panel / mobile drawer) ─── */
 const QuestionGrid = ({ questions, selectedAnswers, multiAnswers, textAnswers, currentIndex, onSelect, onClose }) => (
@@ -170,6 +174,43 @@ const QuizData = () => {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [startTime, setStartTime] = useState(null);
 
+  // ── Proctoring (only when quiz has fullScreenRequired = true) ───────────────
+  const {
+    videoRef: proctoringVideoRef,
+    warningCount, warningLimit, isTerminated, latestViolation, isActive: isProctoringActive,
+    startProctoring, stopProctoring, reportClientViolation,
+  } = useProctoring();
+
+  // Start proctoring when quiz loads and fullScreenRequired is enabled
+  useEffect(() => {
+    if (quizDetails?.fullScreenRequired && !alreadyAttempted && !showResults) {
+      startProctoring(id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizDetails?.fullScreenRequired]);
+
+  // Auto-submit when proctoring terminates the exam
+  useEffect(() => {
+    if (isTerminated && isTimerRunning) {
+      toast.error("Exam terminated due to violations.");
+      handleSubmitQuiz(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTerminated]);
+
+  // Tab-switch detection — report to backend immediately
+  useEffect(() => {
+    if (!quizDetails?.fullScreenRequired || showResults || alreadyAttempted) return;
+    const handleVisibility = () => {
+      if (document.hidden) {
+        reportClientViolation(id, "TAB_SWITCH");
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [quizDetails, showResults, alreadyAttempted, id, reportClientViolation]);
+  // ── End proctoring additions ───────────────────────────────────────────────
+
   // Per-question time tracking (analytics)
   const [timePerQuestion, setTimePerQuestion] = useState({});
   const questionStartTimeRef = useRef(null);
@@ -247,6 +288,10 @@ const QuizData = () => {
 
   const handleSubmitQuiz = useCallback(async (isAutoSubmit = false) => {
     setIsTimerRunning(false);
+    // Stop proctoring when exam is submitted
+    if (quizDetails?.fullScreenRequired) {
+      stopProctoring(id);
+    }
     // Use refs for auto-submit (timer) to avoid stale closures
     const answers = isAutoSubmit ? selectedAnswersRef.current : selectedAnswers;
     const multiAns = isAutoSubmit ? multiAnswersRef.current : multiAnswers;
@@ -737,6 +782,25 @@ const QuizData = () => {
         onConfirm={() => { setConfirmSubmit(false); handleSubmitQuiz(false); }}
         onCancel={() => setConfirmSubmit(false)}
       />
+
+      {/* ── Proctoring UI (only rendered when proctoring is active) ─────────── */}
+      {quizDetails?.fullScreenRequired && (
+        <>
+          <ProctoringOverlay
+            warningCount={warningCount}
+            warningLimit={warningLimit}
+            isTerminated={isTerminated}
+            latestViolation={latestViolation}
+          />
+          <WebcamPreview
+            videoRef={proctoringVideoRef}
+            warningCount={warningCount}
+            warningLimit={warningLimit}
+            isTerminated={isTerminated}
+            isActive={isProctoringActive}
+          />
+        </>
+      )}
     </div>
     </FullScreenGuard>
   );

@@ -316,6 +316,23 @@ public class QuizService {
         return quizRepository.save(quiz);
     }
 
+    @Transactional
+    public Quiz updateQuizStatus(Long quizId, QuizStatus status, UserPrincipal principal) {
+        Quiz quiz = getQuizById(quizId);
+        validateOwnership(quiz, principal, "update status for");
+
+        if (status == QuizStatus.PUBLISHED && (quiz.getQuestions() == null || quiz.getQuestions().isEmpty())) {
+            throw new BadRequestException("Cannot publish a quiz without questions");
+        }
+
+        if (status == QuizStatus.PUBLISHED && quiz.getShareCode() == null) {
+            quiz.setShareCode(generateUniqueShareCode());
+        }
+
+        quiz.setStatus(status);
+        return quizRepository.save(quiz);
+    }
+
     // ========== Quiz Submission ==========
 
     @Transactional

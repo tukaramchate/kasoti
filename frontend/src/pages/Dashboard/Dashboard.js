@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { dashboardAPI } from "../../api";
+import { dashboardAPI, quizAPI } from "../../api";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
@@ -145,9 +145,23 @@ const Dashboard = () => {
                         </div>
                       </td>
                       <td className="py-3 px-3 border-b border-[color:var(--border-light)]">
-                        <span className={`inline-block py-0.5 px-2.5 rounded-full text-[11px] font-semibold uppercase tracking-wide ${getStatusClass(quiz.status)}`}>
-                          {quiz.status || "DRAFT"}
-                        </span>
+                        <select
+                          className={`inline-block py-1 px-2.5 rounded-full text-[11px] font-semibold uppercase tracking-wide cursor-pointer outline-none border border-transparent hover:border-[color:var(--accent)] ${getStatusClass(quiz.status)}`}
+                          value={quiz.status || "DRAFT"}
+                          onChange={async (e) => {
+                            try {
+                              await quizAPI.updateStatus(quiz.id, e.target.value);
+                              toast.success("Quiz status updated");
+                              fetchDashboardData();
+                            } catch (err) {
+                              toast.error(err.response?.data?.message || "Failed to update status");
+                            }
+                          }}
+                        >
+                          <option value="DRAFT" className="bg-[color:var(--bg-primary)] text-[color:var(--text-primary)]">DRAFT</option>
+                          <option value="PUBLISHED" className="bg-[color:var(--bg-primary)] text-[color:var(--text-primary)]">PUBLISHED</option>
+                          <option value="CLOSED" className="bg-[color:var(--bg-primary)] text-[color:var(--text-primary)]">CLOSED</option>
+                        </select>
                       </td>
                       <td className="py-3 px-3 border-b border-[color:var(--border-light)] text-[color:var(--text-primary)] font-medium">
                         {quiz.totalAttempts || quiz.attemptCount || 0}
