@@ -189,11 +189,14 @@ const QuizData = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quizDetails?.fullScreenRequired]);
 
-  // Auto-submit when proctoring terminates the exam
+  // Auto-submit when proctoring terminates the exam.
+  // Uses a ref so the effect never has a stale closure on handleSubmitQuiz.
+  const handleSubmitQuizRef = useRef(null);
   useEffect(() => {
-    if (isTerminated && isTimerRunning) {
-      toast.error("Exam terminated due to violations.");
-      handleSubmitQuiz(true);
+    if (isTerminated) {
+      toast.error("Exam terminated due to repeated violations.");
+      // Call via ref to avoid stale closure
+      if (handleSubmitQuizRef.current) handleSubmitQuizRef.current(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTerminated]);
@@ -341,6 +344,10 @@ const QuizData = () => {
       toast.error(error.response?.data?.message || "Failed to submit quiz");
     }
   }, [id, selectedAnswers, multiAnswers, textAnswers, startTime, timePerQuestion, quizDetails, currentQuestionIndex]);
+
+  // Keep the ref always pointing at the latest handleSubmitQuiz
+  // so the isTerminated effect can call it without a stale closure.
+  handleSubmitQuizRef.current = handleSubmitQuiz;
 
   useEffect(() => {
     let timer;
@@ -786,11 +793,14 @@ const QuizData = () => {
       {/* ── Proctoring UI (only rendered when proctoring is active) ─────────── */}
       {quizDetails?.fullScreenRequired && (
         <>
+          {/* Inject slideDown keyframe once */}
+          <style>{`@keyframes slideDown { from { opacity:0; transform:translate(-50%,-20px); } to { opacity:1; transform:translate(-50%,0); } }`}</style>
           <ProctoringOverlay
             warningCount={warningCount}
             warningLimit={warningLimit}
             isTerminated={isTerminated}
             latestViolation={latestViolation}
+            onDismiss={() => {}}
           />
           <WebcamPreview
             videoRef={proctoringVideoRef}
